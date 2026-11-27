@@ -268,3 +268,12 @@ form.send .mic.rec { background: #e5484d; border-color: #e5484d; animation: blin
 .floorbtn.add { border-style: dashed; border-color: var(--line); }
 .chat.open ~ .floors, .board.open ~ .floors { opacity: 0; pointer-events: none; }
 @media (max-width: 760px) { .floors { bottom: calc(var(--bot) + 78px); } .floorbtn span { display: none; } }
+.editbar { position: fixed; z-index: 7; left: 50%; transform: translateX(-50%); bottom: calc(var(--bot) + 16px); width: min(720px, calc(100vw - 32px)); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.edit-top { display: flex; align-items: center; gap: 10px; }
+.edit-top .muted { flex: 1; min-width: 0; font-size: 12px; }
+.edit-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.edit-row:empty { display: none; }
+.edit-row b { font-size: 12.5px; margin-inline-end: 4px; }
+.edit-row .btn { padding: 5px 10px; font-size: 12px; }
+body.editing .floors, body.editing .team { display: none; }
+body.editing #scene canvas { cursor: move; }

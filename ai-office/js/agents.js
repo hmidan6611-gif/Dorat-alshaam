@@ -1,6 +1,6 @@
 // Agents: robots that sit in their office, walk the walking grid (avoiding walls and each other),
 // ride the elevator between floors, take breaks when tired, greet colleagues, and show labels.
-import { THREE, camera, std, glow, mesh, legMat, ring3d, burst, sendPulse, onFrame, animateIn, corePos, RoundedBoxGeometry } from './scene.js';
+import { THREE, camera, std, glow, mesh, legMat, ring3d, burst, sendPulse, onFrame, animateIn, corePos, RoundedBoxGeometry, build } from './scene.js';
 import { S, isFemale } from './state.js';
 import { FL, floorById, spotsOn, elevatorOf, drawObj, undrawObj } from './floors.js';
 import { officeSeat, officeDoorOut, CATALOG } from './layout.js';
@@ -79,8 +79,9 @@ export function makeAgent(a, live = false) {
   S.agents.push(ag);
   groupOf(a.floorId).add(ag.robot);
   bindOffice(ag, live);
+  ag.robot.userData.home = ag.robot.position.clone(); ag.robot.userData.scaleHome = new THREE.Vector3(1, 1, 1);
+  if (!live) build(ag.robot, 'pop', 1.35 + S.agents.length * 0.1);
   if (live) { const tl = gsap.timeline(); animateIn(tl, ag.robot, 'pop', 0.5); tl.call(() => { ring3d(ag.parts.ring, a.color, 3.2, 1.2, 0.4); burst(ag.parts.ring, a.color, 60, 4, 1.6, 0.12); }, null, 0.9); }
-  else { ag.robot.userData.home = ag.robot.position.clone(); ag.robot.userData.scaleHome = ag.robot.scale.clone(); }
   return ag;
 }
 const $labels = () => document.getElementById('labels');

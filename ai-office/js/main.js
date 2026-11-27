@@ -19,6 +19,7 @@ import { initMeeting, renderMeetHome } from './meeting.js';
 import { initNewAgent, openNew, restoreAgents, hasRoom } from './newagent.js';
 import { initDayCycle } from './daycycle.js';
 import { initFloorsUI, renderFloorsUI } from './floorsui.js';
+import { initEditor, setEditing } from './editor.js';
 
 /* --------------------------------------------------------------- the office */
 S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, objects: defaultMainObjects() }];
@@ -62,6 +63,7 @@ function select(ag) {
 }
 function setTab(name) {
   if (S.meeting.running && name !== 'meet') return;
+  if (S.editing) setEditing(false);
   setTabState(name);
   if (name === 'office') { select(null); showPanel(null); }
   if (name === 'output') { select(null); }
@@ -221,9 +223,12 @@ initBoard();
 initMeeting({ setTab, setTabState });
 initNewAgent({ select, setTabState, showPanel, viewFloor, focusLounge: () => focusOn(new THREE.Vector3(3, 0.5, 0), isPhone() ? 0.95 : 1) });
 initFloorsUI({ viewFloor, select, renderTeam });
+initEditor({ select, showPanel });
 renderTeam();
 restore();
 runBuild();
 setTimeout(taskTick, 3500);
 startLoop();
 export { select, showPanel, setTab, renderTeam, hasRoom, FL };
+// ?debug exposes state for automated checks
+if (new URLSearchParams(location.search).has('debug')) window.__office = { S, camera, THREE };
