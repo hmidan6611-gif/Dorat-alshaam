@@ -8,6 +8,7 @@ import { sendPulse, stormEvent } from './scene.js';
 import { addLog } from './log.js';
 import { setLive, endLive } from './holo.js';
 import { remember } from './growth.js';
+import { checkBudget, recordUsage } from './usage.js';
 import { playButton, speakAs, stopVoice, isAutoRead, stopDictation, resetDictation } from './voice.js';
 
 let ctl = null, busy = false;
@@ -68,6 +69,7 @@ async function ask(q, spoken = false) {
     });
     return;
   }
+  try { checkBudget(ag); } catch (e) { t.remove(); note(e.message); return; }
   a.history.push({ role: 'user', content: q });
   const turns = [{ role: 'user', content: persona(ag) }, ...a.history.slice(-16)];
   ctl = new AbortController(); setBusy(true);
@@ -77,6 +79,7 @@ async function ask(q, spoken = false) {
     const { text } = await AI.sample(turns, { modelTier: 'complex', cache: false, signal: ctl.signal,
       onText: ({ text }) => { setTxt(ensureOut(), text); msgs().scrollTop = msgs().scrollHeight; setLive(ag, { title: q, text, kind: 'محادثة' }); } });
     const reply = text.trim() || '…';
+    recordUsage(ag, turns.reduce((n, x) => n + x.content.length, 0), reply.length);
     setTxt(ensureOut(), reply);
     a.history.push({ role: 'assistant', content: reply }); saveChat(a); endLive(ag);
     showBubble(ag, pick(a.tasks)); celebrate(ag, reply); emit('chat-replied', ag);

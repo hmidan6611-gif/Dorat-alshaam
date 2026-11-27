@@ -3,17 +3,20 @@ import { $, el, button, gsap, D, pick, rand, now, isPhone, on, emit } from './ut
 import { S, V, byKey } from './state.js';
 import { BUILTIN, CEO } from './data.js';
 import { THREE, renderer, camera, coreBall, corePos, focusOn, runBuild, startLoop, ring3d, boost, sendPulse, shown } from './scene.js';
-import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble } from './agents.js';
+import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble, saveAgentState } from './agents.js';
 import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL } from './floors.js';
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { initApprovals, restoreApprovals } from './approvals.js';
 import { initReplay, restoreReplay } from './replay.js';
 import { initGrowth, restoreMemory, restoreXp } from './growth.js';
+import { initReception } from './reception.js';
+import { restoreUsage } from './usage.js';
+import { openServices } from './delivery.js';
 import { initIntegrations } from './integrations.js';
 import './phone.js';
-import { defaultMainObjects } from './layout.js';
+import { defaultMainObjects, footprint } from './layout.js';
 import { rebuildNav } from './nav.js';
-import { initStore, loadAll, saveState, del, put } from './store.js';
+import { initStore, loadAll, saveState, del } from './store.js';
 import { initAI, updateMode } from './ai.js';
 import { initVoice } from './voice.js';
 import { initNotes, renderNotes } from './notify.js';
@@ -200,7 +203,7 @@ function taskTick() {
   setTimeout(taskTick, rand(2200, 4200));
 }
 // save energy now and then so tired agents stay tired after a reload
-setInterval(() => S.agents.forEach(o => put('agentstate', o.a.key, { energy: Math.round(o.energy), mood: Math.round(o.moodBoost), xp: o.a.xp || 0, xpMonth: o.a.xpMonth || null, at: Date.now() })), 60000);
+setInterval(() => S.agents.forEach(saveAgentState), 60000);
 
 /* --------------------------------------------------------------- restore saved work */
 async function restore() {
@@ -218,6 +221,12 @@ async function restore() {
       main.objects = f.objects; main.name = f.name || main.name;
       main.objects.forEach(o => drawObj(main, o));
       rebuildNav(main);
+      // layouts saved before the reception desk existed get one in free space
+      if (!main.objects.some(o => o.type === 'reception')) {
+        const r = { id: 'reception', type: 'reception', x: 5.6, z: -5.4, rot: 0 }, f = footprint(r);
+        const clash = main.objects.some(x => { const p = footprint(x); return p.x1 < f.x2 && p.x2 > f.x1 && p.z1 < f.z2 && p.z2 > f.z1; });
+        if (!clash) { main.objects.push(r); drawObj(main, r); rebuildNav(main); saveFloor(main); }
+      }
       // layouts saved before the CEO existed get an executive office in free space
       if (!main.objects.some(o => o.agentKey === 'ceo')) {
         const spot = findOfficeSpot(main);
@@ -242,7 +251,7 @@ async function restore() {
   S.notes = data.notes.filter(n => typeof n.text === 'string');
   S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
   S.approvals = (data.approvals || []).filter(a => typeof a.title === 'string');
-  restoreReplay(data.replay); restoreMemory(data.memory); restoreXp(data.agentstate);
+  restoreReplay(data.replay); restoreMemory(data.memory); restoreXp(data.agentstate); restoreUsage(data.agentstate);
   restoreTasks(); restoreGoals(); restoreApprovals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
@@ -261,6 +270,8 @@ initGoals();
 initApprovals();
 initReplay();
 initGrowth();
+initReception();
+$('set-services').onclick = () => { $('settings-pop').hidden = true; openServices(); };
 initIntegrations();
 $('goal-new').onclick = openNewGoal;
 on('show-goals', () => setTab('tasks'));

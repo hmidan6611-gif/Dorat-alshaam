@@ -30,7 +30,7 @@ export const ERR = {
   invalid_json: 'جاء الرد بشكل غير مفهوم. أعد المحاولة.',
 };
 const FATAL = new Set(['not_granted', 'sampling_disabled', 'capability_disabled', 'capability_removed', 'not_declared']);
-export const errText = e => ERR[e?.code] || 'تعذّر الحصول على رد الآن. أعد المحاولة بعد قليل.';
+export const errText = e => (e?.code === 'budget' ? e.message : ERR[e?.code] || 'تعذّر الحصول على رد الآن. أعد المحاولة بعد قليل.');
 export function noteFatal(e) { if (FATAL.has(e?.code)) { AI.off = true; updateMode(); emit('ai-changed'); } }
 
 const teamLine = () => S.agents.map(o => `${o.a.name} (${o.a.role})`).join('، ');

@@ -12,6 +12,7 @@ import { notify, registerActions } from './notify.js';
 import { openModal, openFile } from './modal.js';
 import { setLive, endLive } from './holo.js';
 import { remember } from './growth.js';
+import { checkBudget, recordUsage } from './usage.js';
 
 export const ceo = () => byKey('ceo');
 const saveGoal = g => { g.updatedAt = Date.now(); put('goals', g.id, g); emit('goals-changed', g); };
@@ -58,6 +59,7 @@ async function runGoal(g) {
   let res;
   const tick = setInterval(() => { boss.progress = Math.min(0.9, boss.progress + 0.02); }, 1000);
   try {
+    checkBudget(boss);
     res = await AI.sample.json(planPrompt(g, boss), { modelTier: 'complex', onText: ({ text }) => setLive(boss, { text }) });
   } catch (e) {
     clearInterval(tick); boss.task = null; boss.progress = -1; endLive(boss, 3000);
@@ -65,7 +67,7 @@ async function runGoal(g) {
     notify({ text: `${boss.a.name}: تعذّر التخطيط لـ«${clip(g.text, 60)}». ${g.error}`, kind: 'error', agentKey: 'ceo' });
     return;
   }
-  clearInterval(tick);
+  clearInterval(tick); recordUsage(boss, 4000, JSON.stringify(res || {}).length);
   const items = (Array.isArray(res?.tasks) ? res.tasks : []).filter(x => x && typeof x.title === 'string' && byKey(x.owner) && x.owner !== 'ceo').slice(0, 6);
   if (!items.length) { boss.task = null; boss.progress = -1; endLive(boss); g.status = 'error'; g.error = 'جاءت الخطة بشكل غير مفهوم. أعد المحاولة.'; saveGoal(g); return; }
   g.summary = typeof res.summary === 'string' ? res.summary.slice(0, 400) : '';
@@ -138,8 +140,9 @@ ${g.feedback && prev ? `\nملاحظات المستخدم على نسختك ال
   let text = '';
   const tick = setInterval(() => { boss.progress = Math.min(0.92, boss.progress + 0.015); }, 1000);
   try {
+    checkBudget(boss);
     const r = await AI.sample(prompt, { modelTier: 'complex', cache: false, onText: ({ text: x }) => { setLive(boss, { title: 'التقرير النهائي: ' + g.text, text: x, kind: 'تقرير' }); boss.progress = Math.max(boss.progress, Math.min(0.92, x.length / 4000)); } });
-    text = r.text.trim();
+    text = r.text.trim(); recordUsage(boss, prompt.length, text.length);
   } catch (e) {
     clearInterval(tick); boss.task = null; boss.progress = -1; endLive(boss, 3000);
     noteFatal(e); g.status = 'error'; g.error = errText(e); saveGoal(g);

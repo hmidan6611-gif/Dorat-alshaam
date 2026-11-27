@@ -20,6 +20,9 @@ export function openModal(title, content, footer = []) {
   return close;
 }
 
+/** Extra buttons for the file viewer (registered by delivery.js: send by email, save to Drive). */
+export const fileActions = [];
+
 let downloads = null;
 if (window.claude?.use) window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
 
@@ -32,7 +35,7 @@ export function openFile(file) {
     try { await navigator.clipboard.writeText(file.content); copy.textContent = 'نُسخ'; }
     catch { const r = document.createRange(); r.selectNodeContents(doc); const s = getSelection(); s.removeAllRanges(); s.addRange(r); copy.textContent = 'النص محدد، انسخه'; }
   });
-  const footer = [copy];
+  const footer = [copy, ...fileActions.flatMap(fn => fn(file))];
   if (downloads) {
     const dl = button('btn primary', 'تنزيل الملف', async () => {
       try { await downloads.save({ filename: (file.title || 'ملف').replace(/[\\/:*?"<>|]/g, '').slice(0, 60) + '.txt', data: file.content }); dl.textContent = 'تم التنزيل'; }

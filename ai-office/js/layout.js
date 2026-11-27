@@ -30,9 +30,10 @@ export const CATALOG = {
     spots: [[-0.8, -1.0, -0.8, 0, 1], [0, -1.0, 0, 0, 1], [0.8, -1.0, 0.8, 0, 1], [-0.8, 1.0, -0.8, 0, 1], [0, 1.0, 0, 0, 1], [0.8, 1.0, 0.8, 0, 1]],
     kind: 'table', m: 'في الاجتماع', f: 'في الاجتماع', gain: 0 },
   elevator: { label: 'مصعد', w: 1.8, d: 0.9, rects: [[-0.8, -0.4, 0.8, 0.4]], spots: [[0, 0.9, 0, 0]], kind: 'elevator', fixed: true },
+  reception: { label: 'الاستقبال', w: 2.8, d: 1.8, rects: [[-1.2, -0.75, 1.2, 0.35]], spots: [[0.7, 0.95, 0.7, 0]], kind: 'reception', m: 'يراجع طلبات الموافقة', f: 'تراجع طلبات الموافقة', gain: 1, unique: true },
   core: { label: 'الخلية', w: 2.8, d: 2.8, rects: [[-1.25, -1.25, 1.25, 1.25]], spots: [[-1.9, -0.35, 0, 0], [-1.9, 0.35, 0, 0]], kind: 'core', m: 'يراقب الخلية', f: 'تراقب الخلية', gain: 2, unique: true },
 };
-export const PLACEABLE = ['office', 'plant', 'sofa', 'screen', 'shelf', 'cooler', 'coffee', 'table'];
+export const PLACEABLE = ['office', 'plant', 'sofa', 'screen', 'shelf', 'cooler', 'coffee', 'table', 'reception'];
 
 /* ------------------------------------------------------------------ office geometry (room-local) */
 export const OFFICE = { HW: 1.75, ZB: -1.7, ZF: 1.7, DOOR: 0.55, SEAT: [0, -0.5], DESK_Z: 0.45 };
@@ -81,7 +82,7 @@ export function drawObject(o, color = '#94a3b8') {
   const g = new THREE.Group(); g.position.set(o.x, 0, o.z); g.rotation.y = rotAngle(o.rot);
   const parts = {};
   ({ office: (gg, oo, cc, pp) => { drawOffice(gg, oo, cc, pp); if (oo.exec) drawExec(gg, oo, cc, pp); }, plant: drawPlant, cooler: drawCooler, coffee: drawCoffee, sofa: drawSofa, screen: drawScreen,
-    shelf: drawShelf, table: drawTable, elevator: drawElevator, core: () => {} })[o.type]?.(g, o, color, parts);
+    shelf: drawShelf, table: drawTable, elevator: drawElevator, reception: drawReception, core: () => {} })[o.type]?.(g, o, color, parts);
   return { group: g, parts };
 }
 
@@ -209,6 +210,24 @@ function drawTable(g) {
     mesh(new RoundedBoxGeometry(0.6, 0.5, 0.08, 2, 0.03), std('#202a58'), 0, 0.78, s * 0.27, ch);
   }));
 }
+/** Reception desk with the approvals tray and a receptionist robot. */
+function drawReception(g, o, c, P) {
+  mesh(new RoundedBoxGeometry(2.4, 1.0, 0.7, 2, 0.06), std('#e8ecff', { roughness: 0.35 }), 0, 0.5, 0, g);
+  mesh(new THREE.BoxGeometry(2.42, 0.06, 0.74), glow('#ffd166', 0.9), 0, 1.02, 0, g);
+  mesh(new THREE.BoxGeometry(2.0, 0.05, 0.2), glow('#3d6bff', 0.7), 0, 0.55, 0.36, g);
+  // approvals tray
+  P.tray = mesh(new THREE.BoxGeometry(0.5, 0.1, 0.35), std('#141d45', { emissive: '#ffd166', emissiveIntensity: 0.4 }), -0.6, 1.1, 0.05, g);
+  for (let i = 0; i < 3; i++) mesh(new THREE.BoxGeometry(0.42, 0.012, 0.3), std('#ffffff'), -0.6, 1.16 + i * 0.015, 0.05, g);
+  // receptionist
+  const bot = new THREE.Group(); bot.position.set(0.4, 0, -0.65); g.add(bot);
+  const shell = std('#cfd6f5', { roughness: 0.35, metalness: 0.3 });
+  mesh(new RoundedBoxGeometry(0.6, 0.6, 0.45, 3, 0.15), shell, 0, 1.15, 0, bot);
+  mesh(new RoundedBoxGeometry(0.65, 0.5, 0.5, 3, 0.18), shell, 0, 1.75, 0, bot);
+  mesh(new RoundedBoxGeometry(0.5, 0.3, 0.05, 2, 0.08), std('#0a0f24', { metalness: 0.6 }), 0, 1.76, 0.25, bot);
+  [-0.1, 0.1].forEach(x => mesh(new THREE.CapsuleGeometry(0.035, 0.04, 4, 8), new THREE.MeshBasicMaterial({ color: '#9ef0c4', toneMapped: false }), x, 1.77, 0.28, bot));
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.9, 10), legMat, 0, 0.45, 0, bot);
+  P.bot = bot;
+}
 function drawElevator(g) {
   mesh(new THREE.BoxGeometry(1.7, 2.6, 0.5), std('#141d45', { metalness: 0.6, roughness: 0.3 }), 0, 1.3, -0.1, g);
   mesh(new THREE.BoxGeometry(0.62, 2.1, 0.04), std('#cfd6f5', { metalness: 0.8, roughness: 0.2 }), -0.32, 1.06, 0.17, g);
@@ -231,6 +250,7 @@ export function defaultMainObjects() {
     { id: 'screen1', type: 'screen', x: 4.9, z: 7.45, rot: 2 },
     { id: 'elev', type: 'elevator', x: 7.1, z: -7.5, rot: 0 },
     { id: 'core', type: 'core', x: 5.2, z: -1.3, rot: 0 },
+    { id: 'reception', type: 'reception', x: 5.6, z: -5.4, rot: 0 },
   ];
 }
 /** A new department floor: elevator, lounge corner and a few empty offices. */

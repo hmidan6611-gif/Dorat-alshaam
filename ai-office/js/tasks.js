@@ -13,6 +13,7 @@ import { notify, registerActions } from './notify.js';
 import { openModal, openFile } from './modal.js';
 import { setLive, endLive } from './holo.js';
 import { skillsPrompt, remember } from './growth.js';
+import { checkBudget, recordUsage } from './usage.js';
 
 const runs = new Map(); // taskId -> AbortController of the running step
 export const taskById = id => S.tasks.find(t => t.id === id);
@@ -21,9 +22,9 @@ const nameOf = key => byKey(key)?.a.name || 'وكيل محذوف';
 const save = t => { t.updatedAt = Date.now(); put('tasks', t.id, t); emit('tasks-changed', t); };
 
 /* ------------------------------------------------------------------ model */
-export function createTask({ title, desc = '', chain = [], approval = true, goalId = '', deps = [], hold = false }) {
+export function createTask({ title, desc = '', chain = [], approval = true, goalId = '', deps = [], hold = false, after = null }) {
   const t = { id: uid('t'), title, desc, status: 'todo', chain: chain.filter(Boolean), step: 0, progress: 0, approval,
-    outputs: [], feedback: '', error: '', paused: false, goalId, deps, hold, createdAt: Date.now(), updatedAt: Date.now() };
+    outputs: [], feedback: '', error: '', paused: false, goalId, deps, hold, after, createdAt: Date.now(), updatedAt: Date.now() };
   S.tasks.unshift(t); save(t);
   schedule();
   return t;
@@ -108,9 +109,10 @@ async function runStep(t, ag) {
   let text;
   try {
     if (aiReady()) {
+      checkBudget(ag);
       const res = await AI.sample(stepPrompt(t, ag), { modelTier: 'complex', cache: false, signal: ctl.signal,
         onText: ({ text }) => { streamed = text.length; setLive(ag, { title: t.title, text, kind: 'مهمة' }); } });
-      text = res.text.trim();
+      text = res.text.trim(); recordUsage(ag, stepPrompt(t, ag).length, text.length);
     } else {
       // no Claude here: simulate the work so the flow can still be seen, and say so in the file
       for (let k = 0; k < 20 && !ctl.signal.aborted; k++) { await wait(400); streamed += 130; setLive(ag, { title: t.title, text: `أعمل على «${t.title}»…\n`.repeat(1 + (k >> 2)), kind: 'مهمة' }); }
@@ -189,6 +191,7 @@ function finishDone(t, manual = false) {
   t.status = 'done'; t.paused = false; t.error = ''; t.doneAt = Date.now(); save(t);
   S.tasksDoneToday++; emit('stats');
   const ag = byKey(t.chain[t.chain.length - 1]);
+  if (ag && !manual && t.after) emit('deliver', t);
   if (ag && !manual) {
     stormEvent(ag, ag.a.color, 0.5);
     // tasks that belong to a goal are reported to the CEO, not to you
@@ -254,14 +257,18 @@ export function openNewTask(presetKey = '') {
     title.value = x.title; desc.value = x.desc;
     const keys = x.chain.filter(byKey); who.value = keys[0] || ''; h1.value = keys[1] || ''; h2.value = keys[2] || '';
   })));
+  const after = el('select'); after.id = 'task-after';
+  [['', 'لا شيء'], ['email', 'أرسل الناتج بالبريد'], ['drive', 'احفظ الناتج في Google Drive']].forEach(([v, l]) => after.append(new Option(l, v)));
+  const afterTo = el('input'); afterTo.type = 'email'; afterTo.dir = 'ltr'; afterTo.id = 'task-after-to'; afterTo.placeholder = 'name@example.com'; afterTo.hidden = true;
+  after.onchange = () => { afterTo.hidden = after.value !== 'email'; };
   const chk = el('label', 'check'); chk.append(appr, document.createTextNode('تحتاج موافقتي قبل أن تُعتبر منجزة'));
   frag.append(el('h3', '', 'أمثلة'), ex, field('عنوان المهمة', title), field('التفاصيل', desc), field('المسؤول', who),
-    field('ثم يسلّمها إلى (اختياري)', h1), field('ثم إلى (اختياري)', h2), chk);
+    field('ثم يسلّمها إلى (اختياري)', h1), field('ثم إلى (اختياري)', h2), field('بعد الإنجاز (ينتظر موافقتك)', after), afterTo, chk);
   let close;
   const go = button('btn primary', 'أنشئ المهمة', () => {
     const v = title.value.trim(); if (!v) return title.focus();
     const chain = [who.value, h1.value, h2.value].filter(Boolean);
-    createTask({ title: v, desc: desc.value.trim(), chain, approval: appr.checked });
+    createTask({ title: v, desc: desc.value.trim(), chain, approval: appr.checked, after: after.value ? { kind: after.value, to: afterTo.value.trim() } : null });
     close();
   });
   close = openModal('مهمة جديدة', frag, [go]);

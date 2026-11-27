@@ -8,6 +8,13 @@ import { findPath } from './nav.js';
 import { SIT } from './data.js';
 import { gsap, D, el, rand, pick, now, emit } from './util.js';
 import { dayPart } from './daycycle.js';
+import { put } from './store.js';
+
+/** Everything about an agent that changes over time (energy, mood, XP, usage, budget) is saved as one document. */
+export function saveAgentState(ag) {
+  put('agentstate', ag.a.key, { energy: Math.round(ag.energy), mood: Math.round(ag.moodBoost), xp: ag.a.xp || 0, xpMonth: ag.a.xpMonth || null,
+    usage: ag.a.usage || null, budget: ag.a.budget || null, at: Date.now() });
+}
 
 /* ------------------------------------------------------------------ robot looks */
 export const SHAPES = {

@@ -6,7 +6,7 @@ import { THREE, onFrame, world } from './scene.js';
 import { FL } from './floors.js';
 import { put } from './store.js';
 import { notify } from './notify.js';
-import { showBubble, nudgeMood } from './agents.js';
+import { showBubble, nudgeMood, saveAgentState } from './agents.js';
 import { addEvent } from './log.js';
 import { playChime } from './audio.js';
 
@@ -51,7 +51,7 @@ export function giveXp(ag, n, why) {
   const before = levelOf(ag).index;
   ag.a.xp = (ag.a.xp || 0) + n;
   ag.a.xpMonth = { m: monthKey(), xp: monthXp(ag) + n };
-  put('agentstate', ag.a.key, { energy: Math.round(ag.energy), mood: Math.round(ag.moodBoost), xp: ag.a.xp, xpMonth: ag.a.xpMonth, at: Date.now() });
+  saveAgentState(ag);
   emit('xp-changed', ag, n, why);
   const after = levelOf(ag);
   if (after.index > before) {

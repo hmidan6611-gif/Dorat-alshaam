@@ -9,6 +9,7 @@ import { openModal } from './modal.js';
 import { addEvent } from './log.js';
 import { byKey } from './state.js';
 import { showBubble } from './agents.js';
+import { checkBudget, recordUsage } from './usage.js';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
 
@@ -29,6 +30,7 @@ export function openCallSetup(ag) {
     if (!aiReady()) { status.textContent = 'كتابة النص تحتاج Claude. يمكنك كتابته بنفسك.'; return; }
     draft.disabled = true; status.textContent = `${ag.a.name} ${isFemale(ag.a) ? 'تكتب' : 'يكتب'} نص المكالمة…`;
     try {
+      checkBudget(ag);
       const r = await AI.sample(`${identity(ag)}
 
 جهّز تعليمات لوكيل صوتي سيجري مكالمة هاتفية نيابة عنك.
@@ -37,7 +39,7 @@ export function openCallSetup(ag) {
 - يتكلم بالعربية بلهجة مهذبة وواضحة، ولا يدّعي أنه إنسان إذا سُئل.
 - لا يطلب أي بيانات دفع أو كلمات مرور.
 - نص عادي بلا Markdown، 120 إلى 250 كلمة.`, { modelTier: 'default' });
-      script.value = r.text.trim(); status.textContent = 'راجع النص وعدّله إن أردت، ثم اطلب الموافقة.';
+      script.value = r.text.trim(); recordUsage(ag, 1500, script.value.length); status.textContent = 'راجع النص وعدّله إن أردت، ثم اطلب الموافقة.';
     } catch (e) { status.textContent = errText(e); }
     draft.disabled = false;
   });

@@ -11,6 +11,8 @@ import { openNewGoal, openGoal, goalProgress } from './goals.js';
 import { holoPos, showHolo } from './holo.js';
 import { openCallSetup } from './phone.js';
 import { growthCard, renderMemory } from './growth.js';
+import { usageCard } from './usage.js';
+import { summarizeInbox } from './delivery.js';
 import { focusOn } from './scene.js';
 
 let tab = 'overview';
@@ -59,7 +61,7 @@ function renderOverview(ag) {
   const mood = moodOf(ag);
   box.append(meter('الطاقة', ag.energy, ag.energy < 30 ? '#ff6b6b' : ag.energy < 55 ? '#ffc53d' : '#34e08a', Math.round(ag.energy) + '%'),
     meter('المزاج', Math.min(100, ag.energy * 0.7 + 30 + ag.moodBoost), mood.color, mood.label));
-  box.append(growthCard(ag));
+  box.append(usageCard(ag), growthCard(ag));
   const fl = floorById(a.floorId); if (fl) box.append(el('div', 'muted', `${a.personality ? a.personality + ' · ' : ''}${fl.name}`));
 
   const mine = S.tasks.filter(t => t.chain.includes(a.key));
@@ -81,7 +83,7 @@ function renderOverview(ag) {
 
   box.append(el('p', 'lead', a.intro));
   const tools = el('div', 'row');
-  tools.append(button('btn', 'مكالمة هاتفية', () => openCallSetup(ag)));
+  tools.append(button('btn', 'مكالمة هاتفية', () => openCallSetup(ag)), button('btn', 'لخّص بريدي', () => summarizeInbox(ag)));
   tools.append(button('btn', isFemale(a) ? 'اقرأ شاشتها' : 'اقرأ شاشته', () => { showHolo(ag); focusOn(holoPos(ag), 2.6); }));
   box.append(tools);
   if (a.ceo) {
@@ -129,5 +131,5 @@ function renderFiles(ag) {
 export function initPanel() {
   document.querySelectorAll('#ptabs button').forEach(b => { b.onclick = () => setTab(b.dataset.tab); });
   const refresh = () => { if (S.panel === 'chat' && S.focused) { $('chat-role').textContent = `${S.focused.a.role} · ${statusText(S.focused)}`; if (tab !== 'chat') renderTab(); } };
-  ['agents-changed', 'tasks-changed', 'files-changed', 'events-changed', 'goals-changed', 'memory-changed', 'xp-changed'].forEach(n => on(n, refresh));
+  ['agents-changed', 'tasks-changed', 'files-changed', 'events-changed', 'goals-changed', 'memory-changed', 'xp-changed', 'usage-changed'].forEach(n => on(n, refresh));
 }
