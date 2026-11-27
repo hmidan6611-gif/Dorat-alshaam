@@ -3,7 +3,7 @@
 import { el, button, on, clip } from './util.js';
 import { S, byKey } from './state.js';
 import { INTEGRATIONS, integrationStatus, checkConnections, callIntegration, mcpErrText, composioConnect } from './integrations.js';
-import { requestApproval, registerExecutor } from './approvals.js';
+import { requestApproval, registerExecutor, openApproval } from './approvals.js';
 import { openModal, fileActions } from './modal.js';
 import { AI, aiReady, identity, errText } from './ai.js';
 import { checkBudget, recordUsage } from './usage.js';
@@ -99,6 +99,30 @@ export function openServices() {
   };
   draw(); frag.append(ul);
   const check = button('btn primary', 'افحص الاتصال', async () => { check.disabled = true; await checkConnections(); draw(); check.disabled = false; });
-  openModal('الخدمات المربوطة', frag, [check]);
+  const test = button('btn', 'أرسل رسالة تجريبية', () => askTestEmail());
+  openModal('الخدمات المربوطة', frag, [test, check]);
 }
 export { byKey };
+
+/* ------------------------------------------------------------------ test email */
+const TEST_KEY = 'deskhive:test-email';
+/** A ready-made test message to yourself; it still waits for your approval like any other email. */
+export function askTestEmail() {
+  const frag = document.createDocumentFragment();
+  const addr = el('input'); addr.type = 'email'; addr.dir = 'ltr'; addr.id = 'test-to'; addr.placeholder = 'name@example.com';
+  try { addr.value = localStorage.getItem(TEST_KEY) || ''; } catch { /* private window */ }
+  const msg = el('p', 'lead', 'رسالة قصيرة جاهزة من المكتب إلى بريدك للتأكد أن الربط مع Gmail يعمل. ستراها قبل الإرسال وتُرسل فقط بعد موافقتك.');
+  const f = el('label', 'field', 'أرسلها إلى'); f.append(addr);
+  frag.append(msg, f);
+  let close;
+  const go = button('btn primary', 'جهّز الرسالة', () => {
+    const t = addr.value.trim(); if (!EMAIL.test(t)) { msg.textContent = 'اكتب بريداً إلكترونياً صحيحاً.'; return addr.focus(); }
+    try { localStorage.setItem(TEST_KEY, t); } catch { /* private window */ }
+    const when = new Date().toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
+    const body = `مرحباً،\n\nهذه رسالة تجريبية من «خلية المكتب» للتأكد أن الوكلاء يستطيعون الإرسال من بريدك في Gmail.\nأُرسلت بعد موافقتك في ${when}.\n\nإذا وصلتك، فالربط يعمل.\n\n— نادر، المدير التنفيذي`;
+    const a = requestApproval({ kind: 'email', agentKey: 'ceo', title: `رسالة تجريبية إلى ${t}`,
+      preview: `إلى: ${t}\nالموضوع: رسالة تجريبية من خلية المكتب\n\n${body}`, payload: { to: t, subject: 'رسالة تجريبية من خلية المكتب', body } });
+    close(); openApproval(a);
+  });
+  close = openModal('رسالة تجريبية', frag, [go]);
+}
