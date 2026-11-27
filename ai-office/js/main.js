@@ -1,11 +1,14 @@
 // Entry point: builds the floors and agents, wires the top bar, team list, panels and picking, then restores saved work.
-import { $, el, button, gsap, D, pick, rand, now, isPhone, on } from './util.js';
+import { $, el, button, gsap, D, pick, rand, now, isPhone, on, emit } from './util.js';
 import { S, V, byKey } from './state.js';
 import { BUILTIN, CEO } from './data.js';
 import { THREE, renderer, camera, coreBall, corePos, focusOn, runBuild, startLoop, ring3d, boost, sendPulse, shown } from './scene.js';
 import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble } from './agents.js';
 import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL } from './floors.js';
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
+import { initApprovals, restoreApprovals } from './approvals.js';
+import { initIntegrations } from './integrations.js';
+import './phone.js';
 import { defaultMainObjects } from './layout.js';
 import { rebuildNav } from './nav.js';
 import { initStore, loadAll, saveState, del, put } from './store.js';
@@ -128,6 +131,7 @@ function refreshTeam() {
   $('st-working').textContent = S.agents.filter(o => (o.a.working || o.task) && atDesk(o)).length;
 }
 on('agents-changed', refreshTeam);
+on('select-agent', ag => { if (S.focused !== ag) select(ag); });
 on('team-changed', renderTeam);
 on('stats', () => { $('st-tasks').textContent = S.tasksDoneToday; });
 on('meeting-ended', () => schedule());
@@ -235,7 +239,8 @@ async function restore() {
   S.events = data.events.filter(e => typeof e.text === 'string');
   S.notes = data.notes.filter(n => typeof n.text === 'string');
   S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
-  restoreTasks(); restoreGoals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
+  S.approvals = (data.approvals || []).filter(a => typeof a.title === 'string');
+  restoreTasks(); restoreGoals(); restoreApprovals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
   saveState(kind === 'db' ? 'محفوظ في حسابك' : 'محفوظ في هذا المتصفح');
@@ -250,6 +255,8 @@ initChat({ onDeleteAgent: deleteAgent });
 initPanel();
 initBoard();
 initGoals();
+initApprovals();
+initIntegrations();
 $('goal-new').onclick = openNewGoal;
 on('show-goals', () => setTab('tasks'));
 initMeeting({ setTab, setTabState });
@@ -267,4 +274,4 @@ setTimeout(taskTick, 3500);
 startLoop();
 export { select, showPanel, setTab, renderTeam, hasRoom, FL };
 // ?debug exposes state for automated checks
-if (new URLSearchParams(location.search).has('debug')) window.__office = { S, camera, THREE };
+if (new URLSearchParams(location.search).has('debug')) window.__office = { S, camera, THREE, emit };

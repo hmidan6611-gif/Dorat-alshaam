@@ -352,3 +352,8 @@ body.editing #scene canvas { cursor: move; }
 .goalchip small { font-size: 11px; color: var(--muted); }
 .goalchip .bar i { background: linear-gradient(90deg, #ffd166, #fff); }
 @media (max-width: 760px) { #goal-new { padding: 7px 8px; } }
+
+/* ===================================================== voice talk */
+#talk-btn.rec { background: #e5484d; border-color: #e5484d; color: #fff; animation: blink 1.2s infinite; }
+.talkpop { position: fixed; z-index: 46; top: calc(var(--top) + 70px); left: 50%; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); display: flex; gap: 10px; align-items: center; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
+.talkpop i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 10px #e5484d; animation: blink 1s infinite; }

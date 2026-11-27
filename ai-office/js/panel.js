@@ -9,6 +9,7 @@ import { openFile } from './modal.js';
 import { openNewTask, currentKey } from './tasks.js';
 import { openNewGoal, openGoal, goalProgress } from './goals.js';
 import { holoPos, showHolo } from './holo.js';
+import { openCallSetup } from './phone.js';
 import { focusOn } from './scene.js';
 
 let tab = 'overview';
@@ -25,6 +26,7 @@ export function openAgentPanel(ag, which = 'overview') {
 }
 export function closeAgentPanel() { stopChat(); }
 
+on('open-tab', n => setTab(n));
 function setTab(name) {
   tab = name;
   document.querySelectorAll('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
@@ -76,6 +78,7 @@ function renderOverview(ag) {
 
   box.append(el('p', 'lead', a.intro));
   const tools = el('div', 'row');
+  tools.append(button('btn', 'مكالمة هاتفية', () => openCallSetup(ag)));
   tools.append(button('btn', isFemale(a) ? 'اقرأ شاشتها' : 'اقرأ شاشته', () => { showHolo(ag); focusOn(holoPos(ag), 2.6); }));
   box.append(tools);
   if (a.ceo) {

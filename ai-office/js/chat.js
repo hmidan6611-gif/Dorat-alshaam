@@ -7,7 +7,7 @@ import { goHome, showBubble } from './agents.js';
 import { sendPulse, stormEvent } from './scene.js';
 import { addLog } from './log.js';
 import { setLive, endLive } from './holo.js';
-import { playButton, speakLines, stopVoice, isAutoRead, stopDictation, resetDictation } from './voice.js';
+import { playButton, speakAs, stopVoice, isAutoRead, stopDictation, resetDictation } from './voice.js';
 
 let ctl = null, busy = false;
 const msgs = () => $('msgs');
@@ -16,7 +16,7 @@ function bubble(text, cls = '') {
   msgs().appendChild(d); msgs().scrollTop = msgs().scrollHeight; return d;
 }
 const setTxt = (d, t) => { d.querySelector('.txt').textContent = t; };
-const agentBubble = (ag, text) => { const d = bubble(text); d.append(playButton(() => d.querySelector('.txt').textContent, ag.a.voice)); return d; };
+const agentBubble = (ag, text) => { const d = bubble(text); d.append(playButton(() => d.querySelector('.txt').textContent, ag.a)); return d; };
 const note = text => bubble(text, 'note');
 on('chat-note', note);
 export const saveChat = a => put('chats', a.key, { turns: a.history.slice(-40), at: Date.now() });
@@ -46,7 +46,7 @@ function celebrate(ag, reply) {
   addLog(ag, reply.split(/(?<=[.!؟?])\s/)[0]);
 }
 
-async function ask(q) {
+async function ask(q, spoken = false) {
   const ag = S.focused; if (!ag || busy) return;
   const a = ag.a, f = isFemale(a);
   msgs().querySelector('.confirm')?.remove();
@@ -62,7 +62,7 @@ async function ask(q) {
       agentBubble(ag, reply);
       a.history.push({ role: 'user', content: q }, { role: 'assistant', content: reply }); saveChat(a);
       showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
-      if (isAutoRead()) speakLines([{ text: reply, voice: a.voice }]);
+      if (spoken || isAutoRead()) speakAs(a, reply);
     });
     return;
   }
@@ -78,7 +78,7 @@ async function ask(q) {
     setTxt(ensureOut(), reply);
     a.history.push({ role: 'assistant', content: reply }); saveChat(a); endLive(ag);
     showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
-    if (isAutoRead() && S.focused === ag) speakLines([{ text: reply, voice: a.voice }]);
+    if ((spoken || isAutoRead()) && S.focused === ag) speakAs(a, reply);
   } catch (e) {
     if (e?.text) { setTxt(ensureOut(), e.text); a.history.push({ role: 'assistant', content: e.text }); }
     else { t.remove(); if (out && !out.querySelector('.txt').textContent) out.remove(); }
@@ -88,6 +88,19 @@ async function ask(q) {
     setBusy(false); msgs().scrollTop = msgs().scrollHeight;
   }
 }
+
+// speaking to an agent: the chat mic sends to the open agent; the top-bar mic picks the agent by name
+const strip = s => s.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+on('voice-said', ({ target, text }) => {
+  if (target === 'chat') { if (!S.focused) return; $('msg-input').value = ''; resetDictation(); ask(text, true); return; }
+  const words = strip(text).split(/\s+/).slice(0, 4).map(w => w.replace(/^يا/, '').replace(/[،,.!؟?]/g, ''));
+  const ag = S.agents.find(o => words.some(w => w && strip(o.a.name).startsWith(w) && w.length >= 2)) || S.focused || S.agents.find(o => o.a.ceo);
+  if (!ag) return;
+  const rest = text.replace(new RegExp('^\\s*(يا\\s*)?' + ag.a.name + '[،,\\s]*'), '').trim() || text;
+  resetDictation();
+  emit('select-agent', ag);
+  setTimeout(() => { emit('open-tab', 'chat'); ask(rest, true); }, 350);
+});
 
 export function initChat({ onDeleteAgent }) {
   $('send').addEventListener('submit', e => {

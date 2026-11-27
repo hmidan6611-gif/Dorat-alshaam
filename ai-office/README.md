@@ -23,6 +23,9 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/tasks.js` | Kanban board, drag and drop, Claude doing the work, kickoff meetings, hand-offs, approvals |
 | `js/goals.js` | The CEO: plans a goal into tasks with Claude, hands them out door to door, follows progress, writes the final report |
 | `js/holo.js` | Live holographic screens above desks that show the work as it is written |
+| `js/integrations.js` | Outside services through the viewer's claude.ai connectors (Gmail, Drive, Bland); no keys in the page |
+| `js/approvals.js` | Approvals box: sensitive actions run only after the user approves |
+| `js/phone.js` | Phone calls through Bland: the agent writes the call script, the call waits for approval |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
 | `js/chat.js` | Chat with one agent |
 | `js/meeting.js` | Team meeting at the table and turning its plan into tasks |
