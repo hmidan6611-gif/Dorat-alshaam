@@ -87,6 +87,13 @@ form.send { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px so
 form.send input { flex: 1; min-width: 0; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; color: var(--fg); font: 13px var(--font-body); }
 form.send button { border: 0; width: 38px; border-radius: 10px; background: var(--blue); display: grid; place-items: center; }
 form.send svg { width: 16px; height: 16px; }
+form.send button.stop { background: #e5484d; }
+form.send button.stop svg { display: none; }
+form.send button.stop::after { content: ""; width: 11px; height: 11px; border-radius: 2px; background: #fff; }
+.chips button:disabled { opacity: .45; cursor: default; }
+.mode { flex: none; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; color: #e9e2ff; background: rgba(157,123,255,.22); border: 1px solid rgba(157,123,255,.55); }
+.mode.off { color: var(--muted); background: transparent; border-color: var(--line); }
+.msg.note { align-self: center; max-width: 100%; font-size: 11.5px; color: var(--muted); background: transparent; border: 1px dashed var(--line); }
 
 /* world-anchored labels */
 #labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
@@ -154,6 +161,7 @@ form.send svg { width: 16px; height: 16px; }
   <header>
     <div class="ava" id="chat-ava"><i></i></div>
     <div class="who"><b id="chat-name">سيج</b><span id="chat-role">قائد الدعم · متصل</span></div>
+    <span class="mode" id="ai-mode">Claude</span>
     <button class="iconbtn" id="chat-close" aria-label="إغلاق المحادثة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
@@ -162,7 +170,7 @@ form.send svg { width: 16px; height: 16px; }
   <div class="chips" id="chips"></div>
   <form class="send" id="send">
     <input id="msg-input" autocomplete="off" placeholder="اكتب رسالة لوكيلك">
-    <button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+    <button type="submit" id="send-btn" aria-label="إرسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
   </form>
 </section>
 
@@ -631,35 +639,128 @@ function say(text, me = false) {
   const d = document.createElement('div'); d.className = 'msg' + (me ? ' me' : ''); d.textContent = text;
   msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
 }
+/* ---- real AI: each agent answers through Claude (the page's "sample" capability) ---- */
+const FEMALE = new Set([0, 2, 5]); // ميرا، نوفا، جونو
+const history = AGENTS.map(() => []); // per-agent conversation kept by the page
+let sample = null, aiOff = false, ctl = null, busy = false;
+if (window.claude?.use) window.claude.use('sample').then(fn => { sample = fn; updateMode(); }).catch(() => {});
+const aiReady = () => !!sample && !aiOff;
+function updateMode() {
+  const m = $('ai-mode');
+  m.textContent = aiReady() ? 'Claude' : 'ردود تجريبية';
+  m.classList.toggle('off', !aiReady());
+  m.title = aiReady() ? 'الردود يكتبها Claude الآن' : 'الذكاء الاصطناعي غير متاح هنا، والردود مكتوبة مسبقاً';
+}
+updateMode();
+
+function persona(i) {
+  const a = AGENTS[i];
+  const team = AGENTS.map(x => `${x.name} (${x.role})`).join('، ');
+  return `أنت ${a.name}، ${a.role} في «خلية المكتب»، وهو مكتب افتراضي يعمل فيه ستة وكلاء ذكاء اصطناعي: ${team}.
+تعريفك بنفسك: ${a.intro}
+مهامك هذه الأيام: ${a.tasks.join('، ')}.
+قواعد الرد:
+- ${FEMALE.has(i) ? 'تحدّثي بصيغة المؤنث.' : 'تحدّث بصيغة المذكر.'}
+- اكتب بالعربية البسيطة، وإذا كتب المستخدم بلغة أخرى فرُدّ بلغته.
+- اجعل الرد قصيراً: من جملتين إلى خمس جمل، نصاً عادياً بلا Markdown ولا عناوين ولا رموز تنسيق.
+- ابقَ في شخصيتك وتخصصك. إذا كان الطلب خارج تخصصك فساعد باختصار واقترح الزميل المناسب باسمه.
+- لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذه المحادثة، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف. يمكنك كتابة مسودات وخطط وأفكار وتحليلات.`;
+}
+
 function openChat(i) {
   const a = AGENTS[i];
+  ctl?.abort();
   const chat = $('chat'); chat.style.setProperty('--c', a.color);
   $('chat-ava').style.setProperty('--c', a.color);
   $('chat-name').textContent = a.name;
   $('chat-role').textContent = `${a.role} · ${a.working ? 'متصل' : 'خامل'}`;
   msgs.replaceChildren(); say(a.intro);
+  history[i].forEach(t => say(t.content, t.role === 'user'));
   const chips = $('chips'); chips.replaceChildren(); chips.style.setProperty('--c', a.color);
   Object.keys(a.chips).forEach(q => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
   chat.classList.add('open');
 }
-function closeChat() { $('chat').classList.remove('open'); }
+function closeChat() { ctl?.abort(); $('chat').classList.remove('open'); }
 $('chat-close').onclick = () => onSelect(-1);
-$('send').addEventListener('submit', e => { e.preventDefault(); const v = $('msg-input').value.trim(); if (v) { ask(v); $('msg-input').value = ''; } });
+$('send').addEventListener('submit', e => {
+  e.preventDefault();
+  if (busy) { ctl?.abort(); return; }
+  const v = $('msg-input').value.trim(); if (v) { ask(v); $('msg-input').value = ''; }
+});
+function setBusy(b) {
+  busy = b;
+  $('send-btn').setAttribute('aria-label', b ? 'إيقاف' : 'إرسال');
+  $('send-btn').classList.toggle('stop', b);
+  $('chips').querySelectorAll('button').forEach(x => { x.disabled = b; });
+}
 
-function ask(q) {
-  if (focusIdx < 0) return;
-  const i = focusIdx, a = AGENTS[i];
+const ERR = {
+  not_granted: 'لم يُسمح للصفحة باستخدام Claude، فسأرد بردود تجريبية.',
+  sampling_disabled: 'استخدام Claude معطّل في هذا الحساب، فسأرد بردود تجريبية.',
+  capability_disabled: 'استخدام Claude غير متاح هنا، فسأرد بردود تجريبية.',
+  capability_removed: 'استخدام Claude غير متاح هنا، فسأرد بردود تجريبية.',
+  not_declared: 'استخدام Claude غير متاح هنا، فسأرد بردود تجريبية.',
+  rate_limited: 'وصلنا إلى حد الطلبات مؤقتاً. انتظر قليلاً ثم أعد المحاولة.',
+  session_expired: 'انتهت الجلسة. حدّث الصفحة ثم أعد المحاولة.',
+  refused: 'لا أستطيع المساعدة في هذا الطلب.',
+  prompt_too_large: 'المحادثة طويلة جداً. أغلقها وابدأ من جديد.',
+};
+const FATAL = new Set(['not_granted', 'sampling_disabled', 'capability_disabled', 'capability_removed', 'not_declared']);
+
+function celebrate(i, reply) {
+  const a = AGENTS[i];
+  if (!a.working) { a.working = true; refreshTeam(); if (focusIdx === i) $('chat-role').textContent = `${a.role} · متصل`; }
+  sendPulse(i);
+  gsap.delayedCall(D(1.1), () => stormEvent(i, a.color, 0.7));
+  tasks++; $('st-tasks').textContent = tasks;
+  const first = reply.split(/(?<=[.!؟?])\s/)[0];
+  addLog(i, first.length > 90 ? first.slice(0, 88) + '…' : first);
+}
+
+async function ask(q) {
+  if (focusIdx < 0 || busy) return;
+  const i = focusIdx, a = AGENTS[i], ag = agentGroups[i];
   say(q, true);
   const t = say(''); t.classList.add('typing'); t.innerHTML = '<span></span><span></span><span></span>';
-  gsap.delayedCall(D(0.9), () => {
+  ag.kick = 1; showBubble(i, FEMALE.has(i) ? 'تفكّر…' : 'يفكّر…');
+
+  if (!aiReady()) { // fallback: canned replies
+    gsap.delayedCall(D(0.9), () => {
+      t.classList.remove('typing');
+      const reply = a.chips[q] || `تمام. سأعمل على «${q}» وأضع النتيجة في المخرجات عند الانتهاء.`;
+      t.textContent = reply; msgs.scrollTop = msgs.scrollHeight;
+      showBubble(i, pick(a.tasks)); celebrate(i, reply);
+    });
+    return;
+  }
+
+  history[i].push({ role: 'user', content: q });
+  const turns = [{ role: 'user', content: persona(i) }, ...history[i].slice(-16)];
+  ctl = new AbortController(); setBusy(true);
+  let started = false;
+  try {
+    const { text } = await sample(turns, {
+      modelTier: 'quick', cache: false, signal: ctl.signal,
+      onText: ({ text }) => {
+        if (!started) { started = true; t.classList.remove('typing'); showBubble(i, FEMALE.has(i) ? 'تكتب…' : 'يكتب…'); }
+        t.textContent = text; msgs.scrollTop = msgs.scrollHeight;
+      },
+    });
+    const reply = text.trim() || '…';
+    t.classList.remove('typing'); t.textContent = reply;
+    history[i].push({ role: 'assistant', content: reply });
+    showBubble(i, pick(a.tasks)); celebrate(i, reply);
+  } catch (e) {
     t.classList.remove('typing');
-    const reply = a.chips[q] || `تمام. سأعمل على «${q}» وأضع النتيجة في المخرجات عند الانتهاء.`;
-    t.textContent = reply; msgs.scrollTop = msgs.scrollHeight;
-    if (!a.working) { a.working = true; refreshTeam(); $('chat-role').textContent = `${a.role} · متصل`; }
-    agentGroups[i].kick = 1; showBubble(i, pick(a.tasks)); sendPulse(i);
-    gsap.delayedCall(D(1.1), () => stormEvent(i, a.color, 0.7));
-    tasks++; $('st-tasks').textContent = tasks; addLog(i, reply.split(/[.:؟]\s/)[0] + '.');
-  });
+    if (e?.text) { t.textContent = e.text; history[i].push({ role: 'assistant', content: e.text }); }
+    else t.remove();
+    if (e?.code !== 'cancelled') {
+      const n = say(ERR[e?.code] || 'تعذّر الحصول على رد الآن. أعد المحاولة بعد قليل.'); n.classList.add('note');
+      if (FATAL.has(e?.code)) { aiOff = true; updateMode(); }
+    }
+  } finally {
+    setBusy(false); msgs.scrollTop = msgs.scrollHeight;
+  }
 }
 
 /* --------------------------------------------------------------- selection */
