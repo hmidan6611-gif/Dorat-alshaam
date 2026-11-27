@@ -99,11 +99,13 @@
   <header>
     <h2>لوحة المهام</h2>
     <span class="muted" id="board-hint">اسحب المهمة من ⠿ وأفلتها على روبوت أو على اسم وكيل</span>
+    <button class="btn gold" id="goal-new" type="button">هدف للمدير</button>
     <button class="btn primary" id="task-new" type="button">+ مهمة جديدة</button>
     <button class="iconbtn" id="board-close" aria-label="إغلاق لوحة المهام">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </header>
+  <div class="goals" id="goals" hidden></div>
   <div class="bfilter">
     <input class="search" id="board-q" type="search" placeholder="ابحث في المهام" aria-label="بحث في المهام">
     <select id="board-agent" aria-label="فلترة حسب الوكيل"><option value="">كل الوكلاء</option></select>

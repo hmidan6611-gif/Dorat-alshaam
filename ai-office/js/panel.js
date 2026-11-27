@@ -7,6 +7,9 @@ import { floorById } from './floors.js';
 import { renderChat, stopChat } from './chat.js';
 import { openFile } from './modal.js';
 import { openNewTask, currentKey } from './tasks.js';
+import { openNewGoal, openGoal, goalProgress } from './goals.js';
+import { holoPos, showHolo } from './holo.js';
+import { focusOn } from './scene.js';
 
 let tab = 'overview';
 const label = id => STATUS.find(s => s.id === id)?.label || id;
@@ -72,6 +75,20 @@ function renderOverview(ag) {
   box.append(kv);
 
   box.append(el('p', 'lead', a.intro));
+  const tools = el('div', 'row');
+  tools.append(button('btn', isFemale(a) ? 'اقرأ شاشتها' : 'اقرأ شاشته', () => { showHolo(ag); focusOn(holoPos(ag), 2.6); }));
+  box.append(tools);
+  if (a.ceo) {
+    const hd = el('div', 'row'); hd.style.alignItems = 'center';
+    hd.append(el('h3', '', 'الأهداف'), button('btn gold', 'هدف جديد', openNewGoal)); hd.firstChild.style.flex = '1';
+    box.append(hd);
+    if (!S.goals.length) box.append(el('p', 'empty', 'أعطِ المدير هدفاً كبيراً، وسيقسّمه ويوزعه على الفريق ويسلّمك تقريراً نهائياً.'));
+    else {
+      const ul = el('ul', 'tlist');
+      S.goals.slice(0, 8).forEach(g => { const li = el('li'); li.append(button('linkish', g.text, () => openGoal(g)), el('small', '', `${Math.round(goalProgress(g) * 100)}% · ${{ planning: 'يخطط', handing: 'يوزّع', running: 'الفريق يعمل', reporting: 'يكتب التقرير', review: 'بانتظار موافقتك', done: 'منجز', error: 'متوقف' }[g.status] || ''}`)); ul.append(li); });
+      box.append(ul);
+    }
+  }
   const head = el('div', 'row'); head.style.alignItems = 'center';
   head.append(el('h3', '', isFemale(a) ? 'مهامها' : 'مهامه'), button('btn primary', '+ أسند مهمة', () => openNewTask(a.key)));
   head.firstChild.style.flex = '1';
@@ -106,5 +123,5 @@ function renderFiles(ag) {
 export function initPanel() {
   document.querySelectorAll('#ptabs button').forEach(b => { b.onclick = () => setTab(b.dataset.tab); });
   const refresh = () => { if (S.panel === 'chat' && S.focused) { $('chat-role').textContent = `${S.focused.a.role} · ${statusText(S.focused)}`; if (tab !== 'chat') renderTab(); } };
-  ['agents-changed', 'tasks-changed', 'files-changed', 'events-changed'].forEach(n => on(n, refresh));
+  ['agents-changed', 'tasks-changed', 'files-changed', 'events-changed', 'goals-changed'].forEach(n => on(n, refresh));
 }

@@ -343,3 +343,12 @@ body.editing #scene canvas { cursor: move; }
   .stats { gap: 6px; }
 }
 @media (max-width: 370px) { .tabs button { padding: 5px 4px; font-size: 11px; } }
+
+/* ===================================================== CEO + live screens */
+.btn.gold { background: #ffd166; border-color: #ffd166; color: #241a00; }
+.goals { display: flex; gap: 8px; padding: 8px 10px 0; overflow-x: auto; scrollbar-width: none; }
+.goalchip { flex: none; min-width: 200px; max-width: 280px; text-align: start; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,209,102,.45); background: rgba(255,209,102,.08); }
+.goalchip b { font-size: 12.5px; font-weight: 600; }
+.goalchip small { font-size: 11px; color: var(--muted); }
+.goalchip .bar i { background: linear-gradient(90deg, #ffd166, #fff); }
+@media (max-width: 760px) { #goal-new { padding: 7px 8px; } }

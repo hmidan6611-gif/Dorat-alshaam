@@ -14,6 +14,7 @@ export const S = {
   events: [],        // work log entries
   notes: [],         // notifications
   meetings: [],      // saved meetings
+  goals: [],         // CEO goals: [{id, text, status, taskIds, reportId}]
   floors: [],        // [{id, name, dept, color, order, objects}]
   viewFloor: 'main', // floor shown on screen
   meeting: { running: false, ctl: null, skip: null, skipAll: false },

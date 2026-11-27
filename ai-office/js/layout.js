@@ -80,7 +80,7 @@ export const officeDoorOut = o => { const s = o.door || 1; const p = toFloor(o, 
 export function drawObject(o, color = '#94a3b8') {
   const g = new THREE.Group(); g.position.set(o.x, 0, o.z); g.rotation.y = rotAngle(o.rot);
   const parts = {};
-  ({ office: drawOffice, plant: drawPlant, cooler: drawCooler, coffee: drawCoffee, sofa: drawSofa, screen: drawScreen,
+  ({ office: (gg, oo, cc, pp) => { drawOffice(gg, oo, cc, pp); if (oo.exec) drawExec(gg, oo, cc, pp); }, plant: drawPlant, cooler: drawCooler, coffee: drawCoffee, sofa: drawSofa, screen: drawScreen,
     shelf: drawShelf, table: drawTable, elevator: drawElevator, core: () => {} })[o.type]?.(g, o, color, parts);
   return { group: g, parts };
 }
@@ -133,6 +133,22 @@ function drawOffice(g, o, color, P) {
   P.hit = new THREE.Mesh(new THREE.BoxGeometry(3.3, 2.8, 3.3), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false }));
   P.hit.position.y = 1.4; g.add(P.hit);
   P.anim = [[room, 'rise'], [desk, 'drop'], [ring, 'ring']];
+}
+/** The executive office: name sign over the door, a plant, an award on the desk and a gold glow. */
+function drawExec(g, o, color, P) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d');
+  x.fillStyle = '#120e02'; x.fillRect(0, 0, 512, 96); x.strokeStyle = color; x.lineWidth = 6; x.strokeRect(3, 3, 506, 90);
+  x.fillStyle = color; x.font = 'bold 46px "Cairo", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+  x.fillText('المدير التنفيذي', 256, 50);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.3), new THREE.MeshBasicMaterial({ map: t, toneMapped: false }));
+  sign.position.set(0, ROOM_H + 0.32, OFFICE.ZF + 0.02); P.room.add(sign);
+  const back = sign.clone(); back.rotation.y = Math.PI; back.position.z = OFFICE.ZF - 0.02; P.room.add(back);
+  const pot = new THREE.Group(); pot.position.set(-(o.door || 1) * 1.35, 0, -1.3); P.room.add(pot);
+  mesh(new THREE.CylinderGeometry(0.22, 0.17, 0.4, 16), std('#e8ecff'), 0, 0.2, 0, pot);
+  [[0, 0.7, 0, .3], [.15, 1.0, 0, .22], [-.12, 0.95, .05, .24]].forEach(([a, b, d, r]) => mesh(new THREE.SphereGeometry(r, 14, 12), std('#33c07a'), a, b, d, pot));
+  mesh(new THREE.ConeGeometry(0.07, 0.22, 12), std(color, { metalness: 0.9, roughness: 0.2, emissive: color, emissiveIntensity: 0.3 }), 0.95, 1.0, -0.15, P.desk);
+  mesh(new THREE.BoxGeometry(2.6, 0.03, 1.3), glow(color, 0.35), 0, 0.745, 0, P.desk);
 }
 function drawPlant(g, o, c, P) {
   mesh(new THREE.CylinderGeometry(0.45, 0.35, 0.7, 24), std('#e8ecff'), 0, 0.35, 0, g);
@@ -206,6 +222,7 @@ export function defaultMainObjects() {
   const off = [[-5.2, -5.6, 1, 'mira'], [-0.6, -5.6, -1, 'otto'], [-5.2, -1.6, 1, 'nova'], [-0.6, -1.6, -1, 'sage'], [-5.2, 2.4, 1, 'pip'], [-0.6, 2.4, -1, 'juno']];
   return [
     ...off.map(([x, z, door, agentKey]) => ({ id: 'o_' + agentKey, type: 'office', x, z, rot: 0, door, agentKey })),
+    { id: 'o_ceo', type: 'office', x: 5.6, z: 2.4, rot: 0, door: -1, agentKey: 'ceo', exec: true },
     { id: 'cooler1', type: 'cooler', x: -2.9, z: -7.7, rot: 0 },
     { id: 'coffee1', type: 'coffee', x: 7.35, z: 6.4, rot: 3 },
     { id: 'sofa1', type: 'sofa', x: -7.25, z: 6.2, rot: 1 },

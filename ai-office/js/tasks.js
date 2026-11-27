@@ -11,6 +11,7 @@ import { THREE, camera, renderer, handoffBeam, sendPulse, stormEvent } from './s
 import { addEvent } from './log.js';
 import { notify, registerActions } from './notify.js';
 import { openModal, openFile } from './modal.js';
+import { setLive, endLive } from './holo.js';
 
 const runs = new Map(); // taskId -> AbortController of the running step
 export const taskById = id => S.tasks.find(t => t.id === id);
@@ -19,9 +20,9 @@ const nameOf = key => byKey(key)?.a.name || 'وكيل محذوف';
 const save = t => { t.updatedAt = Date.now(); put('tasks', t.id, t); emit('tasks-changed', t); };
 
 /* ------------------------------------------------------------------ model */
-export function createTask({ title, desc = '', chain = [], approval = true }) {
+export function createTask({ title, desc = '', chain = [], approval = true, goalId = '', deps = [], hold = false }) {
   const t = { id: uid('t'), title, desc, status: 'todo', chain: chain.filter(Boolean), step: 0, progress: 0, approval,
-    outputs: [], feedback: '', error: '', paused: false, createdAt: Date.now(), updatedAt: Date.now() };
+    outputs: [], feedback: '', error: '', paused: false, goalId, deps, hold, createdAt: Date.now(), updatedAt: Date.now() };
   S.tasks.unshift(t); save(t);
   schedule();
   return t;
@@ -56,13 +57,20 @@ function moveTo(t, status) {
 export function schedule() {
   if (S.meeting.running) return;
   for (const t of [...S.tasks].reverse()) {
-    if (t.status !== 'todo' || t.paused || !t.chain.length) continue;
+    if (t.status !== 'todo' || t.paused || t.hold || !t.chain.length) continue;
+    if ((t.deps || []).some(id => taskById(id) && taskById(id).status !== 'done')) continue; // waits for the tasks it builds on
     const ag = byKey(currentKey(t));
     if (ag && !ag.task) runStep(t, ag);
   }
 }
 
 /* ------------------------------------------------------------------ doing the work */
+function goalLine(t) {
+  const g = t.goalId && S.goals.find(x => x.id === t.goalId); if (!g) return '';
+  const deps = (t.deps || []).map(taskById).filter(Boolean).map(d => S.files.find(f => f.id === d.outputs[d.outputs.length - 1])).filter(Boolean);
+  const mem = deps.map(f => `\nمن عمل ${f.agentName} («${f.title}»):\n«${clip(f.content, 5000)}»`).join('\n');
+  return `الهدف الكبير: ${g.text}\n${mem ? 'ابنِ على ما أنجزه زملاؤك:' + mem + '\n' : ''}`;
+}
 function stepPrompt(t, ag) {
   const prev = t.outputs.length ? S.files.find(f => f.id === t.outputs[t.outputs.length - 1]) : null;
   const next = byKey(t.chain[t.step + 1]);
@@ -70,8 +78,8 @@ function stepPrompt(t, ag) {
   const redo = t.feedback && prev && prev.agentKey === ag.a.key;
   return `${identity(ag)}
 
-لديك مهمة عمل حقيقية من المستخدم. نفّذها الآن بنفسك وسلّم الناتج كاملاً.
-عنوان المهمة: ${t.title}
+لديك مهمة عمل حقيقية${t.goalId ? ' كلّفك بها المدير التنفيذي ضمن هدف أكبر' : ' من المستخدم'}. نفّذها الآن بنفسك وسلّم الناتج كاملاً.
+${goalLine(t)}عنوان المهمة: ${t.title}
 ${t.desc ? `التفاصيل: ${t.desc}\n` : ''}${prev && !redo ? `\nهذا ما سلّمه لك ${prev.agentName}${prevAgent ? ` (${prevAgent.a.role})` : ''}، ابنِ عليه:\n«${clip(prev.content, 12000)}»\n` : ''}${redo ? `\nهذه نسختك السابقة:\n«${clip(prev.content, 12000)}»\nوملاحظات المستخدم عليها: ${t.feedback}\nأعد كتابة الناتج كاملاً مع تطبيق الملاحظات.\n` : ''}${next ? `\nبعد أن تنتهي سيستلم عملك ${next.a.name} (${next.a.role})، فاجعل الناتج واضحاً ومفيداً له.\n` : ''}
 اكتب الناتج النهائي نفسه، وليس وصفاً لما ستفعله.
 - ابدأ بسطر واحد هو عنوان الملف، ثم سطر فارغ، ثم المحتوى.
@@ -100,16 +108,16 @@ async function runStep(t, ag) {
   try {
     if (aiReady()) {
       const res = await AI.sample(stepPrompt(t, ag), { modelTier: 'complex', cache: false, signal: ctl.signal,
-        onText: ({ text }) => { streamed = text.length; } });
+        onText: ({ text }) => { streamed = text.length; setLive(ag, { title: t.title, text, kind: 'مهمة' }); } });
       text = res.text.trim();
     } else {
       // no Claude here: simulate the work so the flow can still be seen, and say so in the file
-      for (let k = 0; k < 20 && !ctl.signal.aborted; k++) { await wait(400); streamed += 130; }
+      for (let k = 0; k < 20 && !ctl.signal.aborted; k++) { await wait(400); streamed += 130; setLive(ag, { title: t.title, text: `أعمل على «${t.title}»…\n`.repeat(1 + (k >> 2)), kind: 'مهمة' }); }
       if (ctl.signal.aborted) throw { code: 'cancelled' };
       text = `${t.title}\n\nنسخة تجريبية: Claude غير متاح في هذه الصفحة الآن، لذلك لم يكتب ${ag.a.name} محتوى حقيقياً.\nافتح الصفحة من claude.ai واسمح لها باستخدام Claude، ثم أعد تشغيل المهمة.`;
     }
   } catch (e) {
-    clearInterval(tick); runs.delete(t.id);
+    clearInterval(tick); runs.delete(t.id); endLive(ag, 3000);
     if (ag.task === t.id) { ag.task = null; ag.progress = -1; }
     emit('agents-changed');
     if (e?.code === 'cancelled' || !taskById(t.id)) { schedule(); return; }
@@ -132,7 +140,7 @@ async function runStep(t, ag) {
   addEvent(ag, `${f ? 'أنهت' : 'أنهى'} «${t.title}» وكتب${f ? 'ت' : ''} ملف «${title}»`, t.id);
   sendPulse(ag);
   await wait(700);
-  ag.task = null; ag.progress = -1;
+  ag.task = null; ag.progress = -1; endLive(ag);
 
   const next = byKey(t.chain[t.step + 1]);
   if (next) return handoff(t, ag, next);
@@ -182,8 +190,10 @@ function finishDone(t, manual = false) {
   const ag = byKey(t.chain[t.chain.length - 1]);
   if (ag && !manual) {
     stormEvent(ag, ag.a.color, 0.5);
-    notify({ text: `«${t.title}» منجزة.`, kind: 'done', taskId: t.id, agentKey: ag.a.key });
+    // tasks that belong to a goal are reported to the CEO, not to you
+    if (!t.goalId) notify({ text: `«${t.title}» منجزة.`, kind: 'done', taskId: t.id, agentKey: ag.a.key });
   }
+  emit('task-done', t);
 }
 export function approve(t) {
   if (!t || t.status !== 'review') return;

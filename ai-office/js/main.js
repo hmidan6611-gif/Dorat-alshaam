@@ -1,10 +1,11 @@
 // Entry point: builds the floors and agents, wires the top bar, team list, panels and picking, then restores saved work.
 import { $, el, button, gsap, D, pick, rand, now, isPhone, on } from './util.js';
 import { S, V, byKey } from './state.js';
-import { BUILTIN } from './data.js';
+import { BUILTIN, CEO } from './data.js';
 import { THREE, renderer, camera, coreBall, corePos, focusOn, runBuild, startLoop, ring3d, boost, sendPulse, shown } from './scene.js';
 import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble } from './agents.js';
-import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, FL } from './floors.js';
+import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL } from './floors.js';
+import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { defaultMainObjects } from './layout.js';
 import { rebuildNav } from './nav.js';
 import { initStore, loadAll, saveState, del, put } from './store.js';
@@ -29,7 +30,7 @@ import { initSettings } from './settings.js';
 S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, objects: defaultMainObjects() }];
 S.viewFloor = 'main';
 buildFloor(S.floors[0]);
-BUILTIN.forEach(b => makeAgent({ ...b, custom: false, history: [], floorId: 'main', officeId: 'o_' + b.key }));
+[...BUILTIN, CEO].forEach(b => makeAgent({ ...b, custom: false, history: [], floorId: 'main', officeId: 'o_' + b.key }));
 
 /* --------------------------------------------------------------- panels, tabs, selection */
 function showPanel(name) {
@@ -211,6 +212,11 @@ async function restore() {
       main.objects = f.objects; main.name = f.name || main.name;
       main.objects.forEach(o => drawObj(main, o));
       rebuildNav(main);
+      // layouts saved before the CEO existed get an executive office in free space
+      if (!main.objects.some(o => o.agentKey === 'ceo')) {
+        const spot = findOfficeSpot(main);
+        if (spot) { const o = { id: 'o_ceo', type: 'office', x: spot.x, z: spot.z, rot: 0, door: spot.door, agentKey: 'ceo', exec: true }; main.objects.push(o); drawObj(main, o); rebuildNav(main); saveFloor(main); }
+      }
       S.agents.forEach(ag => { if (!main.objects.some(o => o.id === ag.a.officeId)) { const o = main.objects.find(x => x.agentKey === ag.a.key); if (o) ag.a.officeId = o.id; } bindOffice(ag); });
     } else if (!floorById(f.id)) {
       const fl = { id: f.id, name: f.name || 'طابق', dept: f.dept || '', color: f.color || '#3d6bff', order: f.order || S.floors.length, objects: f.objects };
@@ -228,7 +234,8 @@ async function restore() {
   S.files = data.files.filter(f => typeof f.content === 'string');
   S.events = data.events.filter(e => typeof e.text === 'string');
   S.notes = data.notes.filter(n => typeof n.text === 'string');
-  restoreTasks(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
+  S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
+  restoreTasks(); restoreGoals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
   saveState(kind === 'db' ? 'محفوظ في حسابك' : 'محفوظ في هذا المتصفح');
@@ -242,6 +249,9 @@ initDayCycle();
 initChat({ onDeleteAgent: deleteAgent });
 initPanel();
 initBoard();
+initGoals();
+$('goal-new').onclick = openNewGoal;
+on('show-goals', () => setTab('tasks'));
 initMeeting({ setTab, setTabState });
 initNewAgent({ select, setTabState, showPanel, viewFloor, focusLounge: () => focusOn(new THREE.Vector3(3, 0.5, 0), isPhone() ? 0.95 : 1) });
 initFloorsUI({ viewFloor, select, renderTeam });

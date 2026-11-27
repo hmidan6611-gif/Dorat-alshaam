@@ -211,8 +211,8 @@ export function goBreak(ag) {
   });
 }
 /** Walk to a colleague's door (hand-offs). Resolves on arrival; call goHome() afterwards. */
-export async function goVisit(ag, host, text) {
-  await goWork(ag);
+export async function goVisit(ag, host, text, direct = false) {
+  if (!direct) await goWork(ag); // hand-offs start from the desk; the CEO's rounds go door to door
   if (text) showBubble(ag, text, 3000);
   return walkTo(ag, { ...officeDoorOut(host.rec.obj), floor: host.a.floorId, kind: 'errand', until: Infinity }, 1.9);
 }
@@ -372,6 +372,7 @@ onFrame((dt, t) => {
     o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
     const lead = S.speaker || S.focused;
     o.tag.style.opacity = S.built || o.robot.scale.x > 0.99 ? (o.dim ? 0.2 : !lead || lead === o ? 1 : 0.35) : 0;
+    if (o.holo?.mesh.visible && o.holo.mesh.material.opacity > 0.4) o.tag.style.opacity = 0; // the live screen shows name and progress
   });
 });
 export { sendPulse };

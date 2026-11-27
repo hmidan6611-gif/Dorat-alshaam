@@ -21,6 +21,8 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/agents.js` | Robots (shapes), walking, elevator rides, breaks, energy and mood, greetings, labels |
 | `js/daycycle.js` | Morning, noon, sunset and night lighting |
 | `js/tasks.js` | Kanban board, drag and drop, Claude doing the work, kickoff meetings, hand-offs, approvals |
+| `js/goals.js` | The CEO: plans a goal into tasks with Claude, hands them out door to door, follows progress, writes the final report |
+| `js/holo.js` | Live holographic screens above desks that show the work as it is written |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
 | `js/chat.js` | Chat with one agent |
 | `js/meeting.js` | Team meeting at the table and turning its plan into tasks |
