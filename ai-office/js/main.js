@@ -12,6 +12,9 @@ import { initGrowth, restoreMemory, restoreXp } from './growth.js';
 import { initReception } from './reception.js';
 import { restoreUsage } from './usage.js';
 import { openServices } from './delivery.js';
+import { initMultiuser, openInvite } from './multiuser.js';
+import { openStore } from './templates.js';
+import { openPlans, restorePlan } from './plans.js';
 import { initIntegrations } from './integrations.js';
 import './phone.js';
 import { defaultMainObjects, footprint } from './layout.js';
@@ -112,6 +115,7 @@ function renderTeam() {
   });
   const li = el('li'), add = button('member add', '+ وكيل جديد', openNew);
   add.id = 'add-agent'; li.append(add); ul.append(li);
+  const li2 = el('li'), store = button('member add', 'متجر الوكلاء', openStore); store.id = 'open-store'; li2.append(store); ul.append(li2);
   refreshTeam();
 }
 /* search: filters the team list and dims robots that don't match */
@@ -137,7 +141,7 @@ function refreshTeam() {
 }
 on('agents-changed', refreshTeam);
 on('select-agent', ag => { if (S.focused !== ag) select(ag); });
-on('team-changed', renderTeam);
+on('team-changed', () => { renderTeam(); renderFloorsUI(); });
 on('stats', () => { $('st-tasks').textContent = S.tasksDoneToday; });
 on('meeting-ended', () => schedule());
 on('ai-changed', () => { if (S.panel === 'meet' && !S.meeting.running) renderMeetHome(); });
@@ -230,7 +234,7 @@ async function restore() {
       // layouts saved before the CEO existed get an executive office in free space
       if (!main.objects.some(o => o.agentKey === 'ceo')) {
         const spot = findOfficeSpot(main);
-        if (spot) { const o = { id: 'o_ceo', type: 'office', x: spot.x, z: spot.z, rot: 0, door: spot.door, agentKey: 'ceo', exec: true }; main.objects.push(o); drawObj(main, o); rebuildNav(main); saveFloor(main); }
+        if (spot) { const o = { id: 'o_ceo', type: 'office', x: spot.x, z: spot.z, rot: spot.rot || 0, door: spot.door, agentKey: 'ceo', exec: true }; main.objects.push(o); drawObj(main, o); rebuildNav(main); saveFloor(main); }
       }
       S.agents.forEach(ag => { if (!main.objects.some(o => o.id === ag.a.officeId)) { const o = main.objects.find(x => x.agentKey === ag.a.key); if (o) ag.a.officeId = o.id; } bindOffice(ag); });
     } else if (!floorById(f.id)) {
@@ -251,7 +255,7 @@ async function restore() {
   S.notes = data.notes.filter(n => typeof n.text === 'string');
   S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
   S.approvals = (data.approvals || []).filter(a => typeof a.title === 'string');
-  restoreReplay(data.replay); restoreMemory(data.memory); restoreXp(data.agentstate); restoreUsage(data.agentstate);
+  restorePlan(data.prefs); restoreReplay(data.replay); restoreMemory(data.memory); restoreXp(data.agentstate); restoreUsage(data.agentstate);
   restoreTasks(); restoreGoals(); restoreApprovals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
@@ -272,6 +276,10 @@ initReplay();
 initGrowth();
 initReception();
 $('set-services').onclick = () => { $('settings-pop').hidden = true; openServices(); };
+$('set-store').onclick = () => { $('settings-pop').hidden = true; openStore(); };
+$('set-plans').onclick = () => { $('settings-pop').hidden = true; openPlans(); };
+$('set-invite').onclick = () => { $('settings-pop').hidden = true; openInvite(); };
+initMultiuser();
 initIntegrations();
 $('goal-new').onclick = openNewGoal;
 on('show-goals', () => setTab('tasks'));
@@ -290,4 +298,4 @@ setTimeout(taskTick, 3500);
 startLoop();
 export { select, showPanel, setTab, renderTeam, hasRoom, FL };
 // ?debug exposes state for automated checks
-if (new URLSearchParams(location.search).has('debug')) window.__office = { S, camera, THREE, emit };
+if (new URLSearchParams(location.search).has('debug')) import('./nav.js').then(nav => import('./floors.js').then(fl => import('./layout.js').then(ly => { window.__office = { S, camera, THREE, emit, nav, fl, ly }; })));

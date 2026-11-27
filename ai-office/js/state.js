@@ -15,7 +15,8 @@ export const S = {
   notes: [],         // notifications
   meetings: [],      // saved meetings
   goals: [],
-  approvals: [],     // sensitive actions waiting for the user         // CEO goals: [{id, text, status, taskIds, reportId}]
+  approvals: [],
+  plan: 'pro',       // subscription plan id (no real payment)     // sensitive actions waiting for the user         // CEO goals: [{id, text, status, taskIds, reportId}]
   floors: [],        // [{id, name, dept, color, order, objects}]
   viewFloor: 'main', // floor shown on screen
   meeting: { running: false, ctl: null, skip: null, skipAll: false },

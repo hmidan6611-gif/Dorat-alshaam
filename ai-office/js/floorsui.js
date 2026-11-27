@@ -26,6 +26,13 @@ export function renderFloorsUI() {
   if (S.floors.length < 6) nav.append(button('floorbtn add', '+ طابق', openAddFloor));
 }
 
+/** Create a department floor with an elevator, a lounge corner and empty offices. */
+export function addFloor({ name, dept = '', color = '#3d6bff' }) {
+  const f = { id: uid('fl'), name: name.slice(0, 24), dept: dept || name, color, order: S.floors.length, objects: defaultDeptObjects(3) };
+  S.floors.push(f); buildFloor(f, true); saveFloor(f); dispatchEvent(new Event('deskhive-floor-added'));
+  renderFloorsUI();
+  return f;
+}
 function openAddFloor() {
   const frag = document.createDocumentFragment();
   const name = el('input'); name.id = 'floor-name'; name.maxLength = 24; name.placeholder = 'مثلاً: التسويق';

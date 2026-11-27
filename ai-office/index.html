@@ -188,6 +188,7 @@
     <label class="check"><input type="checkbox" id="set-sfx">أصوات المكتب: كيبورد، خطوات، قهوة</label>
     <label class="check"><input type="checkbox" id="set-music">موسيقى مكتب هادئة</label>
     <label class="field">مستوى الصوت<input type="range" id="set-vol" min="0" max="100" step="5"></label>
+    <div class="row"><button class="btn" id="set-store" type="button">متجر الوكلاء</button><button class="btn" id="set-plans" type="button">الاشتراك</button><button class="btn" id="set-invite" type="button">ادعُ زملاءك</button></div>
     <button class="btn" id="set-services" type="button">الخدمات المربوطة: Gmail وDrive والمكالمات</button>
     <label class="field">جودة الرسوم<select id="set-quality">
       <option value="auto">تلقائي حسب سرعة الجهاز</option><option value="high">عالية: ظلال ناعمة وانعكاسات</option>
@@ -206,6 +207,7 @@
 <div class="camhint glass" id="cam-hint" hidden>وضع المدير: اسحب للتدوير، اسحب بزر الفأرة الأيمن أو بإصبعين للتحريك، الأسهم أو WASD للتنقل، ضغطتان على وكيل لمتابعته</div>
 
 <nav class="floors glass" id="floors" aria-label="الطوابق"></nav>
+<div class="people glass" id="people" hidden></div>
 <section class="editbar glass" id="editbar" hidden aria-label="محرر المكتب">
   <div class="edit-top"><b>محرر المكتب</b><span class="muted" id="edit-hint"></span><button class="btn primary" id="edit-done" type="button">تم</button></div>
   <div class="edit-row" id="edit-sel"></div>

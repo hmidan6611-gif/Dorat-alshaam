@@ -10,6 +10,7 @@ import { footprint } from './layout.js';
 import { rebuildNav } from './nav.js';
 import { addEvent } from './log.js';
 import { speakLines } from './voice.js';
+import { canAddAgent, openPlans } from './plans.js';
 
 export const PERSONALITIES = ['ودود ومتعاون', 'رسمي ومنظم', 'مرح وخفيف الظل', 'دقيق ويحب التفاصيل', 'مبدع ويقترح أفكاراً جريئة', 'هادئ ومختصر'];
 export const VOICES = { buttery: 'ناعم', airy: 'خفيف', glassy: 'صافٍ', rounded: 'عميق' };
@@ -26,7 +27,7 @@ export function assignOffice(a, floor, live = true) {
   let o = floor.objects.find(x => x.type === 'office' && !x.agentKey);
   if (!o) {
     const spot = findOfficeSpot(floor); if (!spot) return false;
-    o = { id: 'o_' + a.key, type: 'office', x: spot.x, z: spot.z, rot: 0, door: spot.door, agentKey: null };
+    o = { id: 'o_' + a.key, type: 'office', x: spot.x, z: spot.z, rot: spot.rot || 0, door: spot.door, agentKey: null };
     floor.objects.push(o); drawObj(floor, o, live); rebuildNav(floor);
   }
   o.agentKey = a.key; a.officeId = o.id; a.floorId = floor.id;
@@ -36,8 +37,19 @@ export function assignOffice(a, floor, live = true) {
 export const hasRoom = floor => floor.objects.some(x => x.type === 'office' && !x.agentKey) || !!findOfficeSpot(floor);
 
 let ui = {};
+/** Put a new agent in the office: an office on the floor, the robot, saved, announced. */
+export function installAgent(a, floor) {
+  if (!assignOffice(a, floor)) return null;
+  if (S.viewFloor !== floor.id) ui.viewFloor(floor.id);
+  const ag = makeAgent(a, true);
+  put('agents', a.key, agentDoc(a));
+  addEvent(ag, `${a.name} ${a.gender === 'f' ? 'انضمت' : 'انضم'} إلى الفريق في «${floor.name}»`);
+  emit('team-changed');
+  return ag;
+}
 export function openNew() {
   if (S.meeting.running) return;
+  if (!canAddAgent()) { openPlans('وصلت إلى حد الوكلاء في خطتك. اختر خطة أكبر لإضافة المزيد.'); return; }
   ui.select(null); ui.setTabState('office'); ui.showPanel('new');
   $('new-status').textContent = ''; $('new-submit').disabled = false;
   const used = new Set(S.agents.map(o => o.a.color));
@@ -104,13 +116,9 @@ export function initNewAgent(hooks) {
     const questions = strList(extra?.questions, 2, 60);
     const a = { key: 'c' + Date.now().toString(36), name: name.slice(0, 16), role: role.slice(0, 30), desc: desc.slice(0, 240), intro, color, gender,
       voice, personality, shape, tasks, chips: Object.fromEntries(questions.map(q => [q, ''])), working: true, custom: true, history: [] };
-    if (!assignOffice(a, floor)) { $('new-status').textContent = 'تعذّر إيجاد مكان لمكتب جديد.'; $('new-submit').disabled = false; return; }
-    if (S.viewFloor !== floor.id) hooks.viewFloor(floor.id);
-    const ag = makeAgent(a, true);
-    put('agents', a.key, agentDoc(a));
+    const ag = installAgent(a, floor);
+    if (!ag) { $('new-status').textContent = 'تعذّر إيجاد مكان لمكتب جديد.'; $('new-submit').disabled = false; return; }
     $('new-form').reset(); $('new-status').textContent = '';
-    addEvent(ag, `${a.name} ${gender === 'f' ? 'انضمت' : 'انضم'} إلى الفريق في «${floor.name}»`);
-    emit('team-changed');
     setTimeout(() => hooks.select(ag), 1100);
   });
 }

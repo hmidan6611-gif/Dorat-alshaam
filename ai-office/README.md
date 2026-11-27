@@ -31,6 +31,9 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/delivery.js` | Send files by Gmail, save to Drive, summarise the inbox, services screen |
 | `js/reception.js` | Reception desk: approvals counter in the office, click to open the approvals box |
 | `js/usage.js` | Per-agent daily budgets for Claude requests with warnings and a hard stop |
+| `js/multiuser.js` | Colleagues as live avatars (presence only), invite instructions |
+| `js/templates.js` | Agent store: ready-made agents installed with one click |
+| `js/plans.js` | Subscription plans by number of agents (no real payment) |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
 | `js/chat.js` | Chat with one agent |
 | `js/meeting.js` | Team meeting at the table and turning its plan into tasks |

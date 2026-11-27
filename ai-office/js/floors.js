@@ -2,8 +2,8 @@
 // but agents on every floor keep living and working.
 import { THREE, world, std, glow, mesh, build, BUILD, tiles, windowPanes, RoundedBoxGeometry, animateIn, setCorePos, setCoreVisible } from './scene.js';
 import { S, byKey } from './state.js';
-import { drawObject, CATALOG, spotsOf, footprint } from './layout.js';
-import { rebuildNav, isFree } from './nav.js';
+import { drawObject, CATALOG, spotsOf, footprint, officeSeat } from './layout.js';
+import { rebuildNav, findPath } from './nav.js';
 import { put } from './store.js';
 import { emit, gsap } from './util.js';
 
@@ -100,14 +100,20 @@ export const elevatorOf = floorId => spotsOn(floorId, ['elevator'])[0] || { x: 6
 /** Find a free spot for a new office on a floor (no overlap, inside the room). */
 export function findOfficeSpot(floor) {
   const fps = floor.objects.map(footprint);
-  for (let z = -5.6; z <= 5.6; z += 0.5) for (let x = -6.0; x <= 6.0; x += 0.5) for (const door of [1, -1]) {
-    const o = { type: 'office', x, z, rot: 0, door };
+  const tryRot = (x, z, rot, door) => {
+    const o = { type: 'office', x, z, rot, door };
     const f = footprint(o);
-    if (f.x1 < -7.8 || f.x2 > 7.8 || f.z1 < -7.8 || f.z2 > 7.8) continue;
-    if (fps.some(p => p.x1 < f.x2 + 0.6 && p.x2 > f.x1 - 0.6 && p.z1 < f.z2 + 0.6 && p.z2 > f.z1 - 0.6)) continue;
-    const s = door * 2.1, out = { x: x + s, z };
-    if (!isFree(floor.id, out.x, out.z)) continue;
-    return { x, z, door };
+    if (f.x1 < -7.8 || f.x2 > 7.8 || f.z1 < -7.8 || f.z2 > 7.8) return null;
+    if (fps.some(p => p.x1 < f.x2 + 0.25 && p.x2 > f.x1 - 0.25 && p.z1 < f.z2 + 0.25 && p.z2 > f.z1 - 0.25)) return null;
+    // the new office must not trap anyone: its own seat and every other office must still reach the elevator
+    floor.objects.push(o); rebuildNav(floor);
+    const e = elevatorOf(floor.id);
+    const ok = floor.objects.filter(x2 => x2.type === 'office').every(x2 => !!findPath(floor.id, officeSeat(x2), e));
+    floor.objects.pop(); rebuildNav(floor);
+    return ok ? { x, z, door, rot } : null;
+  };
+  for (let z = -5.6; z <= 6.0; z += 0.25) for (let x = -6.0; x <= 6.0; x += 0.25) for (const rot of [0, 2, 1, 3]) for (const door of [1, -1]) {
+    const r = tryRot(x, z, rot, door); if (r) return r;
   }
   return null;
 }
