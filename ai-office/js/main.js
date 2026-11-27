@@ -8,6 +8,7 @@ import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOffi
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { initApprovals, restoreApprovals } from './approvals.js';
 import { initReplay, restoreReplay } from './replay.js';
+import { initGrowth, restoreMemory, restoreXp } from './growth.js';
 import { initIntegrations } from './integrations.js';
 import './phone.js';
 import { defaultMainObjects } from './layout.js';
@@ -199,7 +200,7 @@ function taskTick() {
   setTimeout(taskTick, rand(2200, 4200));
 }
 // save energy now and then so tired agents stay tired after a reload
-setInterval(() => S.agents.forEach(o => put('agentstate', o.a.key, { energy: Math.round(o.energy), mood: Math.round(o.moodBoost), at: Date.now() })), 60000);
+setInterval(() => S.agents.forEach(o => put('agentstate', o.a.key, { energy: Math.round(o.energy), mood: Math.round(o.moodBoost), xp: o.a.xp || 0, xpMonth: o.a.xpMonth || null, at: Date.now() })), 60000);
 
 /* --------------------------------------------------------------- restore saved work */
 async function restore() {
@@ -241,7 +242,7 @@ async function restore() {
   S.notes = data.notes.filter(n => typeof n.text === 'string');
   S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
   S.approvals = (data.approvals || []).filter(a => typeof a.title === 'string');
-  restoreReplay(data.replay);
+  restoreReplay(data.replay); restoreMemory(data.memory); restoreXp(data.agentstate);
   restoreTasks(); restoreGoals(); restoreApprovals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
@@ -259,6 +260,7 @@ initBoard();
 initGoals();
 initApprovals();
 initReplay();
+initGrowth();
 initIntegrations();
 $('goal-new').onclick = openNewGoal;
 on('show-goals', () => setTab('tasks'));

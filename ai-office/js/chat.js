@@ -7,6 +7,7 @@ import { goHome, showBubble } from './agents.js';
 import { sendPulse, stormEvent } from './scene.js';
 import { addLog } from './log.js';
 import { setLive, endLive } from './holo.js';
+import { remember } from './growth.js';
 import { playButton, speakAs, stopVoice, isAutoRead, stopDictation, resetDictation } from './voice.js';
 
 let ctl = null, busy = false;
@@ -51,6 +52,7 @@ async function ask(q, spoken = false) {
   const a = ag.a, f = isFemale(a);
   msgs().querySelector('.confirm')?.remove();
   bubble(q, 'me');
+  const memo = q.match(/^\s*تذك[ّ]?ر\s*(?:أن|ان)?[:،,]?\s*(.+)/s); if (memo) remember(ag, memo[1], 'chat');
   const t = bubble('', 'typing'); t.querySelector('.txt').innerHTML = '<i></i><i></i><i></i>';
   goHome(ag, true);
   ag.kick = 1; showBubble(ag, f ? 'تفكّر…' : 'يفكّر…');
@@ -61,7 +63,7 @@ async function ask(q, spoken = false) {
       const reply = a.chips[q] || `تمام. سأعمل على «${q}» وأضع النتيجة في المخرجات عند الانتهاء.`;
       agentBubble(ag, reply);
       a.history.push({ role: 'user', content: q }, { role: 'assistant', content: reply }); saveChat(a);
-      showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
+      showBubble(ag, pick(a.tasks)); celebrate(ag, reply); emit('chat-replied', ag);
       if (spoken || isAutoRead()) speakAs(a, reply);
     });
     return;
@@ -77,7 +79,7 @@ async function ask(q, spoken = false) {
     const reply = text.trim() || '…';
     setTxt(ensureOut(), reply);
     a.history.push({ role: 'assistant', content: reply }); saveChat(a); endLive(ag);
-    showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
+    showBubble(ag, pick(a.tasks)); celebrate(ag, reply); emit('chat-replied', ag);
     if ((spoken || isAutoRead()) && S.focused === ag) speakAs(a, reply);
   } catch (e) {
     if (e?.text) { setTxt(ensureOut(), e.text); a.history.push({ role: 'assistant', content: e.text }); }

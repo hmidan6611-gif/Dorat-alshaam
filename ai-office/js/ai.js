@@ -1,6 +1,7 @@
 // Claude through the page's "sample" capability: availability, errors and agent personas.
 import { $, emit } from './util.js';
 import { S, isFemale } from './state.js';
+import { memoryPrompt } from './growth.js';
 
 export const AI = { sample: null, off: false };
 export const aiReady = () => !!AI.sample && !AI.off;
@@ -40,7 +41,7 @@ export function identity(ag) {
   return `أنت ${a.name}، ${a.role} في «خلية المكتب»، وهو مكتب افتراضي يعمل فيه فريق من وكلاء الذكاء الاصطناعي: ${teamLine()}.
 تعريفك بنفسك: ${a.intro}${a.personality ? `\nشخصيتك: ${a.personality}. دع أسلوبك يعكسها.` : ''}${a.desc ? `\nوصف عملك كما كتبه المستخدم: ${a.desc}` : ''}
 ${isFemale(a) ? 'تحدّثي بصيغة المؤنث.' : 'تحدّث بصيغة المذكر.'}
-لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذا المكتب، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف لم يُعطَ لك.`;
+لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذا المكتب، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف لم يُعطَ لك.${memoryPrompt(ag)}`;
 }
 /** Chat persona: short, deep replies. */
 export function persona(ag) {

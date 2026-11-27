@@ -11,6 +11,7 @@ import { addEvent } from './log.js';
 import { notify, registerActions } from './notify.js';
 import { openModal, openFile } from './modal.js';
 import { setLive, endLive } from './holo.js';
+import { remember } from './growth.js';
 
 export const ceo = () => byKey('ceo');
 const saveGoal = g => { g.updatedAt = Date.now(); put('goals', g.id, g); emit('goals-changed', g); };
@@ -167,7 +168,7 @@ export function reviseGoal(g) {
   const ta = el('textarea'); ta.rows = 4; ta.id = 'goal-revise'; ta.placeholder = 'مثلاً: ركّز أكثر على الميزانية واختصر المقدمة';
   const frag = document.createDocumentFragment(); frag.append(el('p', 'lead', 'ما الذي تريد تغييره في التقرير؟'), ta);
   let close;
-  const go = button('btn primary', 'أرسل للمدير', () => { const v = ta.value.trim(); if (!v) return ta.focus(); g.feedback = v; close(); writeReport(g); });
+  const go = button('btn primary', 'أرسل للمدير', () => { const v = ta.value.trim(); if (!v) return ta.focus(); g.feedback = v; const b = ceo(); if (b) remember(b, v, 'feedback'); close(); writeReport(g); });
   close = openModal('تعديل التقرير', frag, [go]);
 }
 registerActions('goal', n => {

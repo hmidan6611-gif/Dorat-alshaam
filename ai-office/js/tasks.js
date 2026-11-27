@@ -12,6 +12,7 @@ import { addEvent } from './log.js';
 import { notify, registerActions } from './notify.js';
 import { openModal, openFile } from './modal.js';
 import { setLive, endLive } from './holo.js';
+import { skillsPrompt, remember } from './growth.js';
 
 const runs = new Map(); // taskId -> AbortController of the running step
 export const taskById = id => S.tasks.find(t => t.id === id);
@@ -85,7 +86,7 @@ ${t.desc ? `التفاصيل: ${t.desc}\n` : ''}${prev && !redo ? `\nهذا ما
 - ابدأ بسطر واحد هو عنوان الملف، ثم سطر فارغ، ثم المحتوى.
 - نظّم المحتوى بفقرات قصيرة وقوائم مرقمة عند الحاجة، بنص عادي بلا Markdown (لا # ولا **).
 - الطول المناسب من 150 إلى 700 كلمة حسب حجم المهمة.
-- اكتب بالعربية إلا إذا طلبت المهمة لغة أخرى.`;
+- اكتب بالعربية إلا إذا طلبت المهمة لغة أخرى.${skillsPrompt(ag)}`;
 }
 
 async function runStep(t, ag) {
@@ -134,7 +135,7 @@ async function runStep(t, ag) {
   const lines = text.split('\n');
   const title = clip((lines[0] || t.title).replace(/^[#*\s]+|[*\s]+$/g, '') || t.title, 80);
   const file = { id: uid('f'), taskId: t.id, agentKey: ag.a.key, agentName: ag.a.name, title, content: text, at: Date.now() };
-  S.files.unshift(file); put('files', file.id, file); emit('files-changed', ag);
+  S.files.unshift(file); put('files', file.id, file); emit('files-changed', ag); emit('step-done', ag);
   entry.end = Date.now(); entry.words = text.split(/\s+/).length;
   t.outputs.push(file.id); t.feedback = ''; ag.progress = t.progress = 1; emit('progress', t);
   addEvent(ag, `${f ? 'أنهت' : 'أنهى'} «${t.title}» وكتب${f ? 'ت' : ''} ملف «${title}»`, t.id);
@@ -199,6 +200,7 @@ export function approve(t) {
   if (!t || t.status !== 'review') return;
   const ag = byKey(t.chain[t.chain.length - 1]);
   if (ag) addEvent(ag, `وافقت على «${t.title}»`, t.id);
+  emit('task-approved', t);
   t.chain.forEach(k => { const o = byKey(k); if (o) { nudgeMood(o, 10); showBubble(o, 'رائع، شكراً!', 2200); } });
   finishDone(t);
 }
@@ -211,6 +213,7 @@ export function revise(t) {
     const v = ta.value.trim(); if (!v) return ta.focus();
     const k = currentKey(t); (t.revBy ||= {})[k] = (t.revBy[k] || 0) + 1;
     t.feedback = v; t.status = 'todo'; t.paused = false; t.error = ''; save(t);
+    const who = byKey(currentKey(t)); if (who) remember(who, v, 'feedback');
     const ag = byKey(currentKey(t)); if (ag) { addEvent(ag, `طلبت تعديلات على «${t.title}»`, t.id); nudgeMood(ag, -8); }
     close(); schedule();
   });

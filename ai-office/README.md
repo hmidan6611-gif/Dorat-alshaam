@@ -27,6 +27,7 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/approvals.js` | Approvals box: sensitive actions run only after the user approves |
 | `js/phone.js` | Phone calls through Bland: the agent writes the call script, the call waits for approval |
 | `js/replay.js` | Records poses, speech and events; timeline playback at 1x/2x/4x |
+| `js/growth.js` | Agent memory, XP and levels that unlock skills, employee of the month board, confetti and applause |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
 | `js/chat.js` | Chat with one agent |
 | `js/meeting.js` | Team meeting at the table and turning its plan into tasks |
