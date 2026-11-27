@@ -76,14 +76,15 @@ export function openRoutines() {
   const who = el('select'); who.id = 'rt-who'; S.agents.forEach(o => who.append(new Option(`${o.a.name} — ${o.a.role}`, o.a.key)));
   const every = el('select'); every.id = 'rt-every'; [['daily', 'يومياً'], ['weekly', 'أسبوعياً'], ['monthly', 'شهرياً']].forEach(([v, l]) => every.append(new Option(l, v))); every.value = 'weekly';
   const dow = el('select'); dow.id = 'rt-dow'; DAYS.forEach((d, i) => dow.append(new Option(d, i)));
-  const dom = el('input'); dom.type = 'number'; dom.min = 1; dom.max = 28; dom.value = 1; dom.id = 'rt-dom'; dom.hidden = true;
+  const dom = el('input'); dom.type = 'number'; dom.min = 1; dom.max = 28; dom.value = 1; dom.id = 'rt-dom';
   const hour = el('select'); hour.id = 'rt-hour'; for (let h = 0; h < 24; h++) hour.append(new Option(`${pad(h)}:00`, h)); hour.value = 9;
-  every.onchange = () => { dow.hidden = every.value !== 'weekly'; dom.hidden = every.value !== 'monthly'; };
   const proj = projectSelect('rt-project');
   const f = (l, n) => { const x = el('label', 'field', l); x.append(n); return x; };
-  const when = el('div', 'row'); when.append(f('التكرار', every), f('اليوم', dow), dom, f('الساعة', hour));
+  const dowF = f('اليوم', dow), domF = f('يوم الشهر', dom); domF.hidden = true;
+  every.onchange = () => { dowF.hidden = every.value !== 'weekly'; domF.hidden = every.value !== 'monthly'; };
+  const when = el('div', 'row'); when.append(f('التكرار', every), dowF, domF, f('الساعة', hour));
   frag.append(list, el('h4', '', 'مهمة متكررة جديدة'), f('العنوان', title), f('التفاصيل', desc), f('المسؤول', who), when, f('المشروع', proj));
-  const add = button('btn primary', 'أضف', () => {
+  const add = button('btn primary', 'أضف المهمة المتكررة', () => {
     if (!title.value.trim()) return title.focus();
     if (!who.value) return;
     const r = { id: uid('rt'), title: title.value.trim().slice(0, 100), desc: desc.value.trim(), chain: [who.value], every: every.value, dow: +dow.value, dom: Math.max(1, Math.min(28, +dom.value || 1)),

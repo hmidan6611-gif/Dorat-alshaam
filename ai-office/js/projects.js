@@ -63,7 +63,8 @@ export function openProjects() {
   draw();
   const name = el('input'); name.id = 'proj-name'; name.maxLength = 40; name.placeholder = 'اسم المشروع';
   const client = el('input'); client.id = 'proj-client'; client.maxLength = 40; client.placeholder = 'العميل (اختياري)';
-  const row = el('div', 'row'); row.append(name, client);
+  const fl = (l, n) => { const x = el('label', 'field', l); x.append(n); return x; };
+  const row = el('div', 'row'); row.append(fl('اسم المشروع', name), fl('العميل (اختياري)', client));
   const add = button('btn primary', 'أضف المشروع', () => { if (!name.value.trim()) return name.focus(); addProject(name.value, client.value); name.value = ''; client.value = ''; draw(); });
   frag.append(body, el('h4', '', 'مشروع جديد'), row);
   openModal('المشاريع والمواعيد', frag, [add]);
