@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: full-bleed WebGL office; floating glass panels (top bar, team list left, agent chat right / bottom sheet on phones). */
 :root {
@@ -17,8 +17,8 @@
   --blue: #3d6bff;
   --good: #34e08a;
   --idle: #ffc53d;
-  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --top: env(safe-area-inset-top, 0px);
   --bot: env(safe-area-inset-bottom, 0px);
@@ -36,22 +36,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
 /* top bar */
 .topbar { position: fixed; z-index: 5; top: calc(var(--top) + 12px); left: var(--gl); right: var(--gr); height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 12px; }
-.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: .01em; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 15px; }
 .brand svg { width: 22px; height: 22px; }
 .tabs { display: flex; gap: 4px; background: rgba(255,255,255,.04); padding: 3px; border-radius: 10px; }
 .tabs button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
 .tabs button[aria-selected="true"] { background: var(--blue); color: #fff; box-shadow: 0 0 18px rgba(61,107,255,.55); }
-.stats { margin-left: auto; display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats { margin-inline-start: auto; display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .stats b { color: var(--fg); font-weight: 500; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); display: inline-block; }
 .iconbtn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.03); display: grid; place-items: center; }
 .iconbtn svg { width: 15px; height: 15px; }
 
 /* team list */
-.team { position: fixed; z-index: 4; left: var(--gl); top: calc(var(--top) + 72px); width: 224px; padding: 12px 8px; }
-.team h2 { margin: 0 8px 8px; font: 600 10.5px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.team { position: fixed; z-index: 4; right: var(--gr); top: calc(var(--top) + 72px); width: 224px; padding: 12px 8px; }
+.team h2 { margin: 0 8px 10px; font: 600 12px/1.2 var(--font-body); color: var(--muted); }
 .team ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.member { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; text-align: left; }
+.member { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; text-align: start; }
 .member:hover { background: rgba(255,255,255,.04); }
 .member[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
 .ava { flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--c); display: grid; place-items: center; box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent); }
@@ -61,16 +61,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .who { min-width: 0; flex: 1; }
 .who b { display: block; font-size: 13px; font-weight: 600; }
 .who span { display: block; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.badge { font-size: 9.5px; font-weight: 600; letter-spacing: .04em; padding: 3px 6px; border-radius: 6px; color: #06120c; background: var(--good); }
+.badge { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; color: #06120c; background: var(--good); }
 .badge.idle { background: var(--idle); color: #1d1500; }
 
 /* output log (Output tab) */
 .log { list-style: none; margin: 0; padding: 0 4px; display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; }
-.log li { font-size: 12px; line-height: 1.4; padding: 8px; border-radius: 8px; background: rgba(255,255,255,.035); border-left: 2px solid var(--c); }
+.log li { font-size: 12px; line-height: 1.4; padding: 8px; border-radius: 8px; background: rgba(255,255,255,.035); border-inline-start: 2px solid var(--c); }
 .log time { display: block; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-bottom: 2px; }
 
 /* chat */
-.chat { position: fixed; z-index: 6; right: var(--gr); top: calc(var(--top) + 72px); bottom: calc(var(--bot) + 16px); width: 330px; display: flex; flex-direction: column; transform: translateX(calc(100% + 40px)); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.chat { position: fixed; z-index: 6; left: var(--gl); top: calc(var(--top) + 72px); bottom: calc(var(--bot) + 16px); width: 330px; display: flex; flex-direction: column; transform: translateX(calc(-100% - 40px)); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
 .chat.open { transform: none; }
 .chat header { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
 .chat header .who b { font-size: 14px; }
@@ -106,66 +106,67 @@ form.send svg { width: 16px; height: 16px; }
   .topbar { gap: 8px; padding: 0 8px; }
   .brand span { display: none; }
   .tabs button { padding: 6px 9px; }
-  .team { top: auto; bottom: calc(var(--bot) + 12px); right: var(--gr); width: auto; padding: 8px; }
+  .team { top: auto; bottom: calc(var(--bot) + 12px); left: var(--gl); width: auto; padding: 8px; }
   .team h2 { display: none; }
   .team ul { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
   .member { width: auto; flex: none; padding: 5px 8px; }
   .member .who span, .member .badge { display: none; }
   .log { max-height: 30vh; }
-  .chat { top: auto; left: var(--gl); width: auto; height: 56%; bottom: calc(var(--bot) + 12px); transform: translateY(calc(100% + 40px)); }
+  .chat { top: auto; left: var(--gl); right: var(--gr); width: auto; height: 56%; bottom: calc(var(--bot) + 12px); transform: translateY(calc(100% + 40px)); }
   .hint { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .chat, .bubble { transition: none; } }
 </style>
 
+<script>document.documentElement.dir = "rtl"; document.documentElement.lang = "ar";</script>
 <div id="scene"></div>
 <div id="labels"></div>
 <div id="flash"></div>
-<div id="err">WebGL is not available in this browser, so the 3D office cannot be drawn.</div>
+<div id="err">متصفحك لا يدعم WebGL، لذلك لا يمكن رسم المكتب ثلاثي الأبعاد.</div>
 
 <div class="topbar glass">
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#3d6bff"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" fill="#e9edff"/></svg>
-    <span>Deskhive</span>
+    <span>خلية المكتب</span>
   </div>
   <div class="tabs" role="tablist">
-    <button role="tab" id="tab-office" aria-selected="true">Office</button>
-    <button role="tab" id="tab-hive" aria-selected="false">Hive</button>
-    <button role="tab" id="tab-output" aria-selected="false">Output</button>
+    <button role="tab" id="tab-office" aria-selected="true">المكتب</button>
+    <button role="tab" id="tab-hive" aria-selected="false">الخلية</button>
+    <button role="tab" id="tab-output" aria-selected="false">المخرجات</button>
   </div>
   <div class="stats">
-    <span><i class="dot"></i> <b id="st-working">5</b><span class="opt"> working</span></span>
-    <span class="opt"><b id="st-tasks">216</b> tasks today</span>
+    <span><i class="dot"></i> <b id="st-working">5</b><span class="opt"> يعمل</span></span>
+    <span class="opt"><b id="st-tasks">216</b> مهمة اليوم</span>
     <span class="opt" id="st-clock">09:41</span>
-    <button class="iconbtn" id="replay" title="Rebuild the office" aria-label="Rebuild the office">
+    <button class="iconbtn" id="replay" title="إعادة بناء المكتب" aria-label="إعادة بناء المكتب">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
     </button>
   </div>
 </div>
 
-<aside class="team glass" aria-label="Your team">
-  <h2 id="team-title">Your team</h2>
+<aside class="team glass" aria-label="فريقك">
+  <h2 id="team-title">فريقك</h2>
   <ul id="team"></ul>
   <ul class="log" id="log" hidden></ul>
 </aside>
 
-<section class="chat glass" id="chat" aria-label="Agent chat">
+<section class="chat glass" id="chat" aria-label="محادثة الوكيل">
   <header>
     <div class="ava" id="chat-ava"><i></i></div>
-    <div class="who"><b id="chat-name">Sage</b><span id="chat-role">Support lead · online</span></div>
-    <button class="iconbtn" id="chat-close" aria-label="Close chat">
+    <div class="who"><b id="chat-name">سيج</b><span id="chat-role">قائد الدعم · متصل</span></div>
+    <button class="iconbtn" id="chat-close" aria-label="إغلاق المحادثة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </header>
   <div class="msgs" id="msgs"></div>
   <div class="chips" id="chips"></div>
   <form class="send" id="send">
-    <input id="msg-input" autocomplete="off" placeholder="Message your agent">
-    <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+    <input id="msg-input" autocomplete="off" placeholder="اكتب رسالة لوكيلك">
+    <button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
   </form>
 </section>
 
-<div class="hint">Drag to rotate · scroll to zoom · click a robot</div>
+<div class="hint">اسحب للتدوير · مرّر للتكبير · اضغط على روبوت</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script type="importmap">
@@ -193,36 +194,36 @@ const pick = arr => arr[(Math.random() * arr.length) | 0];
 
 /* ------------------------------------------------------------------ data */
 const AGENTS = [
-  { name: 'Mira', role: 'Research analyst', color: '#ff8a3d', working: true,
-    tasks: ['Reading 12 papers', 'Comparing 5 vendors', 'Writing market brief'],
-    intro: 'Mira on research. I read papers, reports and competitor sites, then hand you a short brief with sources.',
-    chips: { 'Summarize this week': 'Three things moved this week: two competitors cut prices, a new EU rule lands in March, and search interest in our category is up 14%. Full brief is in Output.',
-             'Find 3 competitors': 'On it. Shortlist so far: Brightdesk, Loopwise and Pallet. I will add pricing and team size for each.' } },
-  { name: 'Otto', role: 'Code reviewer', color: '#4d7cff', working: true,
-    tasks: ['Reviewing PR #482', 'Running test suite', 'Flagging 2 regressions'],
-    intro: 'Otto on code review. I read every pull request, run the tests and leave comments before anything merges.',
-    chips: { 'What is blocking merge?': 'PR #482 has one failing test in checkout and a missing null check in the cart service. Everything else is green.',
-             'Review my latest PR': 'Pulled it. Logic looks fine. I left 3 comments: one naming nit, one unused import, one race condition worth fixing.' } },
-  { name: 'Nova', role: 'Product designer', color: '#b06bff', working: true,
-    tasks: ['Sketching onboarding', 'Exporting 8 icons', 'Tidying the style guide'],
-    intro: 'Nova on design. I sketch flows, keep the style guide tidy and export assets for the team.',
-    chips: { 'Show onboarding ideas': 'I have two directions: a 3-step checklist, and a guided tour that starts with sample data. I prefer the second.',
-             'Export app icons': 'Exporting 8 sizes now, from 16px to 1024px. They will show up in Output in a minute.' } },
-  { name: 'Sage', role: 'Support lead', color: '#2fe08a', working: true,
-    tasks: ['Triaging 17 tickets', 'Drafting refund reply', 'Tagging urgent emails'],
-    intro: 'Sage on support. I triage tickets, draft replies and flag anything angry or urgent.',
-    chips: { 'Any urgent tickets?': 'Two. A customer was charged twice on order #7731, and a login outage report from a team of 40. Both are pinned at the top.',
-             'Draft a refund reply': 'Draft ready: "Sorry for the double charge. We refunded $48 to your card today; it can take 3-5 days to appear." Want me to send it?' } },
-  { name: 'Pip', role: 'Finance assistant', color: '#ffc53d', working: false,
-    tasks: ['Reconciling invoices', 'Sorting 40 expenses', 'Checking payroll'],
-    intro: 'Pip on finance. I reconcile invoices, sort expenses and warn you before a bill is late. I am idle right now.',
-    chips: { 'Reconcile invoices': 'Waking up. 23 invoices this month, 21 match the bank feed. Two from Acme are missing, I will chase them.',
-             'Monthly spend?': 'November spend is $18,420, 6% under budget. Software is the biggest line at $5,100.' } },
-  { name: 'Juno', role: 'Operations planner', color: '#ff5c8a', working: true,
-    tasks: ['Planning sprint 14', 'Booking supplier call', 'Updating roadmap'],
-    intro: 'Juno on operations. I plan sprints, book meetings and keep the roadmap current.',
-    chips: { 'Plan next sprint': 'Sprint 14 draft: 9 tickets, 31 points, ends Dec 11. Otto flagged one risky migration, so I left buffer.',
-             'Who is overloaded?': 'Sage is at 140% of normal ticket volume today. I suggest moving the refund queue to Pip for the afternoon.' } },
+  { name: 'ميرا', role: 'محللة أبحاث', color: '#ff8a3d', working: true,
+    tasks: ['أقرأ 12 ورقة بحثية', 'أقارن 5 موردين', 'أكتب ملخص السوق'],
+    intro: 'ميرا للأبحاث. أقرأ الأوراق والتقارير ومواقع المنافسين، ثم أسلّمك ملخصاً قصيراً مع المصادر.',
+    chips: { 'لخّص هذا الأسبوع': 'ثلاثة أمور تغيّرت هذا الأسبوع: منافسان خفّضا أسعارهما، وقانون أوروبي جديد يبدأ في مارس، والبحث عن مجالنا ارتفع 14%. الملخص الكامل في المخرجات.',
+             'اعثر على 3 منافسين': 'بدأت. القائمة حتى الآن: برايت ديسك ولوب وايز وباليت. سأضيف الأسعار وحجم الفريق لكل منها.' } },
+  { name: 'أوتو', role: 'مراجع الكود', color: '#4d7cff', working: true,
+    tasks: ['أراجع طلب الدمج #482', 'أشغّل الاختبارات', 'وجدت تراجعين في الأداء'],
+    intro: 'أوتو لمراجعة الكود. أقرأ كل طلب دمج وأشغّل الاختبارات وأترك ملاحظاتي قبل أي دمج.',
+    chips: { 'ما الذي يمنع الدمج؟': 'الطلب #482 فيه اختبار فاشل في صفحة الدفع، وفحص قيمة فارغة ناقص في خدمة السلة. كل ما عدا ذلك سليم.',
+             'راجع آخر طلب لي': 'سحبته. المنطق سليم. تركت 3 ملاحظات: تسمية متغير، واستيراد غير مستخدم، وحالة تسابق تستحق الإصلاح.' } },
+  { name: 'نوفا', role: 'مصممة المنتج', color: '#b06bff', working: true,
+    tasks: ['أرسم شاشات الترحيب', 'أصدّر 8 أيقونات', 'أرتّب دليل التصميم'],
+    intro: 'نوفا للتصميم. أرسم مسارات الاستخدام وأرتّب دليل التصميم وأصدّر الملفات للفريق.',
+    chips: { 'اعرضي أفكار الترحيب': 'عندي اتجاهان: قائمة من 3 خطوات، أو جولة إرشادية تبدأ ببيانات تجريبية. أفضّل الثانية.',
+             'صدّري أيقونات التطبيق': 'أصدّر 8 مقاسات الآن من 16 إلى 1024 بكسل. ستظهر في المخرجات خلال دقيقة.' } },
+  { name: 'سيج', role: 'قائد الدعم', color: '#2fe08a', working: true,
+    tasks: ['أفرز 17 تذكرة', 'أكتب رد استرداد', 'أعلّم الرسائل العاجلة'],
+    intro: 'سيج للدعم. أفرز التذاكر وأكتب الردود وأنبّهك لأي عميل غاضب أو طلب عاجل.',
+    chips: { 'هل توجد تذاكر عاجلة؟': 'اثنتان. عميل خُصم منه مرتين على الطلب #7731، وبلاغ عن تعطل تسجيل الدخول من فريق من 40 شخصاً. ثبّتهما في الأعلى.',
+             'اكتب رد استرداد': 'المسودة جاهزة: «نعتذر عن الخصم المكرر. أعدنا 48 دولاراً إلى بطاقتك اليوم، وقد يستغرق ظهورها من 3 إلى 5 أيام.» هل أرسلها؟' } },
+  { name: 'بيب', role: 'المساعد المالي', color: '#ffc53d', working: false,
+    tasks: ['أطابق الفواتير', 'أصنّف 40 مصروفاً', 'أراجع الرواتب'],
+    intro: 'بيب للمالية. أطابق الفواتير وأصنّف المصاريف وأنبّهك قبل تأخر أي فاتورة. أنا خامل الآن.',
+    chips: { 'طابق الفواتير': 'استيقظت. لدينا 23 فاتورة هذا الشهر، 21 منها تطابق كشف البنك. فاتورتان من أكمي مفقودتان وسأتابعهما.',
+             'كم صرفنا هذا الشهر؟': 'مصروف نوفمبر 18,420 دولاراً، أقل من الميزانية بنسبة 6%. البرمجيات أكبر بند بـ5,100 دولار.' } },
+  { name: 'جونو', role: 'مخططة العمليات', color: '#ff5c8a', working: true,
+    tasks: ['أخطط للسبرنت 14', 'أحجز مكالمة مع مورد', 'أحدّث خارطة الطريق'],
+    intro: 'جونو للعمليات. أخطط للسبرنتات وأحجز الاجتماعات وأبقي خارطة الطريق محدّثة.',
+    chips: { 'خططي للسبرنت القادم': 'مسودة السبرنت 14: تسع مهام بـ31 نقطة، وينتهي في 11 ديسمبر. نبّه أوتو إلى ترحيل بيانات خطِر، فتركت وقتاً احتياطياً.',
+             'من عليه ضغط زائد؟': 'سيج يعمل بـ140% من حجم التذاكر المعتاد اليوم. أقترح نقل طابور الاسترداد إلى بيب بعد الظهر.' } },
 ];
 const STATIONS = [[-4, -4.2], [0.6, -4.2], [-4, -0.1], [0.6, -0.1], [-4, 4], [0.6, 4]];
 const CORE_POS = new THREE.Vector3(5.1, 2.3, 0.2);
@@ -576,7 +577,7 @@ function updateProjection() {
   // shift the view so the focused robot stays visible beside the chat panel
   let sx = 0, sy = 0;
   if (isPhone()) sy = -V.shift * (innerHeight * 0.56) / 2 * worldPerPx;
-  else sx = V.shift * (346 / 2) * worldPerPx;
+  else sx = -V.shift * (346 / 2) * worldPerPx;
   camera.left = -halfW + sx; camera.right = halfW + sx; camera.top = halfH + sy; camera.bottom = -halfH + sy;
   camera.updateProjectionMatrix();
 }
@@ -589,7 +590,7 @@ AGENTS.forEach((a, i) => {
   li.innerHTML = `<button class="member" style="--c:${a.color}" aria-pressed="false" data-i="${i}">
     <span class="ava"><i></i></span>
     <span class="who"><b>${a.name}</b><span>${a.role}</span></span>
-    <span class="badge${a.working ? '' : ' idle'}">${a.working ? 'Working' : 'Idle'}</span></button>`;
+    <span class="badge${a.working ? '' : ' idle'}">${a.working ? 'يعمل' : 'خامل'}</span></button>`;
   li.firstElementChild.addEventListener('click', () => onSelect(focusIdx === i ? -1 : i));
   teamEl.appendChild(li);
 });
@@ -597,7 +598,7 @@ function refreshTeam() {
   teamEl.querySelectorAll('.member').forEach((b, i) => {
     b.setAttribute('aria-pressed', String(i === focusIdx));
     const badge = b.querySelector('.badge'); const w = AGENTS[i].working;
-    badge.textContent = w ? 'Working' : 'Idle'; badge.classList.toggle('idle', !w);
+    badge.textContent = w ? 'يعمل' : 'خامل'; badge.classList.toggle('idle', !w);
   });
   $('st-working').textContent = AGENTS.filter(a => a.working).length;
 }
@@ -615,7 +616,7 @@ setInterval(() => { $('st-clock').textContent = clock(); }, 1000); $('st-clock')
 function setTab(name) {
   ['office', 'hive', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
   const out = name === 'output';
-  teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'Latest output' : 'Your team';
+  teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
   if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, 1.9); stormEvent(-1, '#c9a6ff', 1); }
   if (name === 'office') { onSelect(-1); }
 }
@@ -635,7 +636,7 @@ function openChat(i) {
   const chat = $('chat'); chat.style.setProperty('--c', a.color);
   $('chat-ava').style.setProperty('--c', a.color);
   $('chat-name').textContent = a.name;
-  $('chat-role').textContent = `${a.role} · ${a.working ? 'online' : 'idle'}`;
+  $('chat-role').textContent = `${a.role} · ${a.working ? 'متصل' : 'خامل'}`;
   msgs.replaceChildren(); say(a.intro);
   const chips = $('chips'); chips.replaceChildren(); chips.style.setProperty('--c', a.color);
   Object.keys(a.chips).forEach(q => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
@@ -652,12 +653,12 @@ function ask(q) {
   const t = say(''); t.classList.add('typing'); t.innerHTML = '<span></span><span></span><span></span>';
   gsap.delayedCall(D(0.9), () => {
     t.classList.remove('typing');
-    const reply = a.chips[q] || `Got it. I will work on "${q}" and post the result in Output when it is done.`;
+    const reply = a.chips[q] || `تمام. سأعمل على «${q}» وأضع النتيجة في المخرجات عند الانتهاء.`;
     t.textContent = reply; msgs.scrollTop = msgs.scrollHeight;
-    if (!a.working) { a.working = true; refreshTeam(); $('chat-role').textContent = `${a.role} · online`; }
+    if (!a.working) { a.working = true; refreshTeam(); $('chat-role').textContent = `${a.role} · متصل`; }
     agentGroups[i].kick = 1; showBubble(i, pick(a.tasks)); sendPulse(i);
     gsap.delayedCall(D(1.1), () => stormEvent(i, a.color, 0.7));
-    tasks++; $('st-tasks').textContent = tasks; addLog(i, reply.split('. ')[0] + '.');
+    tasks++; $('st-tasks').textContent = tasks; addLog(i, reply.split(/[.:؟]\s/)[0] + '.');
   });
 }
 
