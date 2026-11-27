@@ -40,7 +40,7 @@ controls.target.set(0, 0.5, 0);
 
 
 /* --------------------------------------------------------------- lights */
-scene.add(new THREE.HemisphereLight('#8ea6ff', '#0a0f25', 0.9));
+const hemi = new THREE.HemisphereLight('#8ea6ff', '#0a0f25', 0.9); scene.add(hemi);
 const sun = new THREE.DirectionalLight('#ffe2c4', 1.4);
 sun.position.set(9, 16, 7);
 sun.castShadow = true;
@@ -66,81 +66,9 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, parent = world) {
 const BUILD = []; // everything that animates in during the build sequence
 const build = (obj, kind, delay = 0) => { obj.userData.home = obj.position.clone(); obj.userData.scaleHome = obj.scale.clone(); BUILD.push({ obj, kind, delay }); return obj; };
 
-/* --------------------------------------------------------------- room */
-const floor = build(mesh(new THREE.BoxGeometry(16, 0.4, 16), std('#0b1332', { roughness: 0.85 }), 0, -0.2, 0), 'floor');
-{ // glowing tile grid
-  const pts = [];
-  for (let i = -8; i <= 8; i += 2) { pts.push(i, 0.011, -8, i, 0.011, 8, -8, 0.011, i, 8, 0.011, i); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const grid = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#3d6bff', transparent: true, opacity: 0.35, toneMapped: false }));
-  floor.add(grid); grid.position.y = 0.2;
-  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(16, 0.4, 16)), new THREE.LineBasicMaterial({ color: '#6f8dff', toneMapped: false }));
-  floor.add(edge);
-}
-const tiles = []; // flickering floor tiles
-for (let i = 0; i < 9; i++) {
-  const t = mesh(new THREE.PlaneGeometry(1.9, 1.9), glow('#3d6bff', 0), -7 + ((Math.random() * 8) | 0) * 2, 0.012, -7 + ((Math.random() * 8) | 0) * 2);
-  t.rotation.x = -Math.PI / 2; t.castShadow = false; t.userData.phase = Math.random() * 10;
-  tiles.push(t);
-}
-
-function wall(w, h, d, x, z) {
-  const g = new THREE.BoxGeometry(w, h, d); g.translate(0, h / 2, 0);
-  return build(mesh(g, std('#121b3f', { roughness: 0.9 }), x, 0, z), 'wall');
-}
-const backWall = wall(16.3, 6, 0.3, -0.15, -8.15);
-const leftWall = wall(0.3, 6, 16, -8.15, 0);
-
-// windows: emissive panes with frames
-function windowPane(parent, w, h, x, y, z, rotY) {
-  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; parent.add(g);
-  mesh(new THREE.BoxGeometry(w + 0.16, h + 0.16, 0.06), std('#e8ecff', { roughness: 0.4 }), 0, 0, 0, g);
-  const pane = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: '#b9d2ff', toneMapped: false }), 0, 0, 0.04, g);
-  pane.material.color.multiplyScalar(1.1);
-  mesh(new THREE.BoxGeometry(0.05, h, 0.04), std('#e8ecff'), 0, 0, 0.06, g);
-  return g;
-}
-windowPane(backWall, 1.3, 3.2, 3.6, 3.3, 0.17, 0);
-windowPane(backWall, 1.3, 3.2, 5.5, 3.3, 0.17, 0);
-windowPane(leftWall, 1.1, 1.6, 0.17, 3.4, -5.6, Math.PI / 2);
-windowPane(leftWall, 1.1, 1.6, 0.17, 3.4, -3.4, Math.PI / 2);
-// wall art + shelf
-mesh(new THREE.BoxGeometry(0.9, 1.9, 0.06), std('#ff8a3d', { emissive: '#ff6a1a', emissiveIntensity: 0.25 }), -1.2, 4.2, 0.18, backWall);
-mesh(new THREE.BoxGeometry(2.6, 0.08, 0.5), std('#e8ecff'), -1.2, 2.25, 0.4, backWall);
-[['#ff5c8a', 0.45], ['#2fe08a', 0.35], ['#ffc53d', 0.55], ['#4d7cff', 0.4], ['#b06bff', 0.3]].forEach(([c, s], i) =>
-  build(mesh(new RoundedBoxGeometry(s, s, s, 2, 0.06), std(c), -2.2 + i * 0.5, 2.29 + s / 2, 0.4, backWall), 'pop', 0.9 + i * 0.05));
-mesh(new THREE.PlaneGeometry(1.2, 0.8), glow('#2fe08a', 0.8), 0.17, 3.6, 1.6, leftWall).rotation.y = Math.PI / 2;
-
-// plant
-{
-  const plant = new THREE.Group(); plant.position.set(3.3, 0, -7.35); world.add(plant);
-  mesh(new THREE.CylinderGeometry(0.45, 0.35, 0.7, 24), std('#e8ecff'), 0, 0.35, 0, plant);
-  const leaf = std('#33c07a', { roughness: 0.5 });
-  [[0, 1.3, 0, .6], [.35, 1.9, .1, .45], [-.3, 1.8, -.1, .5], [.05, 2.4, 0, .4], [-.15, 1.0, .3, .35]].forEach(([x, y, z, r]) => mesh(new THREE.SphereGeometry(r, 20, 16), leaf, x, y, z, plant));
-  build(plant, 'drop', 0.7);
-}
-// water cooler at the end of the west corridor
-const cooler = new THREE.Group(); cooler.position.set(-2.9, 0, -7.7); world.add(cooler);
-mesh(new THREE.BoxGeometry(0.5, 0.9, 0.45), std('#e8ecff'), 0, 0.45, 0, cooler);
-mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 20), new THREE.MeshStandardMaterial({ color: '#5cc8ff', transparent: true, opacity: 0.75, roughness: 0.1, emissive: '#2a8fd6', emissiveIntensity: 0.4 }), 0, 1.15, 0, cooler);
-build(cooler, 'drop', 0.8);
-// coffee corner, front right
-const coffee = new THREE.Group(); coffee.position.set(7.35, 0, 6.4); world.add(coffee);
-mesh(new RoundedBoxGeometry(0.8, 0.95, 1.6, 2, 0.05), std('#1b2550'), 0, 0.475, 0, coffee);
-mesh(new RoundedBoxGeometry(0.45, 0.55, 0.45, 2, 0.06), std('#cfd6f5', { metalness: 0.5, roughness: 0.3 }), 0, 1.23, -0.3, coffee);
-mesh(new THREE.CircleGeometry(0.07, 16), glow('#ff8a3d'), -0.23, 1.35, -0.3, coffee).rotation.y = -Math.PI / 2;
-mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.13, 14), std('#e8ecff'), 0, 1.02, 0.35, coffee);
-build(coffee, 'drop', 0.85);
-// sofa along the left wall
-{
-  const sofa = new THREE.Group(); sofa.position.set(-7.25, 0, 6.2); sofa.rotation.y = Math.PI / 2; world.add(sofa);
-  const blue = std('#2547d6', { roughness: 0.75 });
-  mesh(new RoundedBoxGeometry(3.2, 0.5, 1.1, 3, 0.12), blue, 0, 0.35, 0, sofa);
-  mesh(new RoundedBoxGeometry(3.2, 0.9, 0.3, 3, 0.12), blue, 0, 0.8, -0.42, sofa);
-  mesh(new RoundedBoxGeometry(0.3, 0.75, 1.1, 3, 0.12), blue, -1.6, 0.5, 0, sofa);
-  mesh(new RoundedBoxGeometry(0.3, 0.75, 1.1, 3, 0.12), blue, 1.6, 0.5, 0, sofa);
-  build(sofa, 'drop', 0.75);
-}
+/* --------------------------------------------------------------- room shells live in floors.js */
+const tiles = []; // flickering floor tiles of every floor (filled by floors.js)
+const windowPanes = []; // window glass of every floor, tinted by the day cycle
 
 /* --------------------------------------------------------------- stations */
 function screenTexture(color) {
@@ -161,6 +89,7 @@ const legMat = std('#0c1230');
 
 /* --------------------------------------------------------------- hive core */
 const CORE = new THREE.Group(); CORE.position.copy(CORE_POS); world.add(CORE);
+const corePos = CORE_POS.clone(); // movable in the office editor
 const coreU = {
   uA: { value: BASE_CORE.clone() }, uTime: { value: 0 }, uStorm: { value: 0 }, uIgnite: { value: 0 },
 };
@@ -209,14 +138,27 @@ const orbits = [1.3, 1.6, 1.95].map((r, k) => {
 });
 // pedestal
 const pedestal = new THREE.Group(); pedestal.position.set(CORE_POS.x, 0, CORE_POS.z); world.add(pedestal);
+pedestal.userData.isCore = true;
 mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.25, 48), std('#141d45', { metalness: 0.5, roughness: 0.35 }), 0, 0.125, 0, pedestal);
 const padRing = mesh(new THREE.TorusGeometry(1.05, 0.03, 8, 96), glow('#9d7bff', 0.9), 0, 0.26, 0, pedestal); padRing.rotation.x = Math.PI / 2;
 build(pedestal, 'pop', 1.0);
 const coreLight = new THREE.PointLight('#9d7bff', 0, 12, 1.6); coreLight.position.copy(CORE_POS); world.add(coreLight);
 
+/** True when the object and all its parents are visible (i.e. on the floor being viewed). */
+function shown(o) { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; }
+
+/** Move the hive core (editor) and show it only on its own floor. */
+function setCorePos(x, z) {
+  corePos.set(x, CORE_POS.y, z); CORE.position.set(x, CORE.position.y, z);
+  pedestal.position.set(x, 0, z); coreLight.position.set(x, CORE_POS.y, z);
+  if (pedestal.userData.home) pedestal.userData.home.set(x, 0, z);
+}
+function setCoreVisible(v) { CORE.visible = v; pedestal.visible = v; coreLight.visible = v; }
+
 /* --------------------------------------------------------------- effects */
 const bursts = [];
 function burst(target, color, count = 120, speed = 6, life = 2.2, size = 0.25) {
+  if (!target.isVector3 && !shown(target)) return;
   const p0 = target.isVector3 ? target : target.getWorldPosition(new THREE.Vector3());
   const pos = new Float32Array(count * 3), vel = [];
   for (let k = 0; k < count; k++) {
@@ -229,6 +171,7 @@ function burst(target, color, count = 120, speed = 6, life = 2.2, size = 0.25) {
   bursts.push({ pts, vel, life, max: life });
 }
 function ring3d(target, color, size = 6, dur = 1.5, thick = 0.3) {
+  if (!shown(target)) return;
   const p0 = target.getWorldPosition(new THREE.Vector3());
   const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.02 * thick * 3, 8, 128), glow(color, 1));
   m.position.copy(p0); m.rotation.set(rand(-0.6, 0.6) + Math.PI / 2, rand(-0.6, 0.6), 0);
@@ -258,7 +201,7 @@ function stormEvent(ag, color, strength = 1) {
 
 /* a glowing packet travels along the beam from a desk to the core */
 function sendPulse(ag) {
-  if (!ag.beam) return;
+  if (!ag.beam || !shown(ag.beam.line)) return;
   const { curve, line } = ag.beam;
   const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), glow(ag.a.color, 1)); scene.add(dot);
   const s = { t: 0 };
@@ -277,27 +220,29 @@ composer.addPass(new OutputPass());
 
 /* --------------------------------------------------------------- hand-off beam between two desks */
 export function handoffBeam(fromAg, toAg, seconds = 3.5) {
-  const a = fromAg.g.position, b = toAg.g.position;
-  const p0 = new THREE.Vector3(a.x, 2.3, a.z - 0.95), p2 = new THREE.Vector3(b.x, 2.3, b.z - 0.95);
+  if (fromAg.a.floorId !== toAg.a.floorId || !shown(fromAg.robot.parent)) return;
+  const parent = fromAg.robot.parent;
+  const a = fromAg.seat, b = toAg.seat;
+  const p0 = new THREE.Vector3(a.x, 2.3, a.z), p2 = new THREE.Vector3(b.x, 2.3, b.z);
   const mid = p0.clone().lerp(p2, 0.5); mid.y += 2.2 + p0.distanceTo(p2) * 0.15;
   const curve = new THREE.QuadraticBezierCurve3(p0, mid, p2);
   const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(80));
   const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: fromAg.a.color, dashSize: 0.18, gapSize: 0.1, transparent: true, opacity: 0, toneMapped: false }));
-  line.computeLineDistances(); world.add(line);
+  line.computeLineDistances(); parent.add(line);
   gsap.to(line.material, { opacity: 0.9, duration: D(0.3) });
   const colors = [fromAg.a.color, toAg.a.color, '#ffffff'];
   const runs = Math.max(3, Math.round(seconds / 0.45));
   for (let k = 0; k < runs; k++) {
     gsap.delayedCall(D(k * 0.4), () => {
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), glow(colors[k % 3], 1)); world.add(dot);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), glow(colors[k % 3], 1)); parent.add(dot);
       const s = { t: 0 };
       gsap.to(s, { t: 1, duration: D(1.1), ease: 'sine.inOut', onUpdate: () => dot.position.copy(curve.getPoint(s.t)),
-        onComplete: () => { world.remove(dot); dot.geometry.dispose(); dot.material.dispose(); } });
+        onComplete: () => { parent.remove(dot); dot.geometry.dispose(); dot.material.dispose(); } });
     });
   }
   gsap.delayedCall(D(seconds), () => {
     burst(new THREE.Vector3(p2.x, p2.y, p2.z).add(world.position), toAg.a.color, 50, 3, 1.3, 0.12);
-    gsap.to(line.material, { opacity: 0, duration: D(0.6), onComplete: () => { world.remove(line); geo.dispose(); line.material.dispose(); } });
+    gsap.to(line.material, { opacity: 0, duration: D(0.6), onComplete: () => { parent.remove(line); geo.dispose(); line.material.dispose(); } });
   });
 }
 
@@ -344,7 +289,7 @@ export function runBuild() {
   if (buildTl) buildTl.kill();
   const tl = buildTl = gsap.timeline({ onComplete: () => {
     S.built = true;
-    S.agents.forEach(o => { if (o.beam.line.material.opacity < 0.2) gsap.to(o.beam.line.material, { opacity: 0.22, duration: D(0.6) }); });
+    S.agents.forEach(o => { if (o.beam && o.beam.line.material.opacity < 0.2) gsap.to(o.beam.line.material, { opacity: 0.22, duration: D(0.6) }); });
   } });
   BUILD.forEach(({ obj, kind, delay }) => animateIn(tl, obj, kind, kind === 'floor' ? 0 : kind === 'wall' ? 0.35 : delay));
   tl.fromTo(coreU.uIgnite, { value: 0 }, { value: 1, duration: D(0.8), ease: 'power2.in' }, 2.0);
@@ -352,7 +297,7 @@ export function runBuild() {
   tl.fromTo(coreWire.material, { opacity: 0 }, { opacity: 0.18, duration: D(1) }, 2.4);
   orbits.forEach((o, k) => tl.fromTo(o.material, { opacity: 0 }, { opacity: 0.6, duration: D(0.8) }, 2.5 + k * 0.1));
   tl.fromTo(coreLight, { intensity: 0 }, { intensity: 14, duration: D(1) }, 2.4);
-  S.agents.forEach((o, k) => tl.fromTo(o.beam.line.material, { opacity: 0 }, { opacity: 0.22, duration: D(0.6) }, 2.7 + k * 0.06));
+  S.agents.filter(o => o.beam).forEach((o, k) => tl.fromTo(o.beam.line.material, { opacity: 0 }, { opacity: 0.22, duration: D(0.6) }, 2.7 + k * 0.06));
   tl.call(() => stormEvent(null, '#c9a6ff', 1.3), null, 2.8);
 }
 
@@ -361,7 +306,7 @@ const frameHooks = [];
 export const onFrame = fn => frameHooks.push(fn);
 const clockT = new THREE.Clock();
 function frame() {
-  const dt = Math.min(clockT.getDelta(), 0.05), t = clockT.elapsedTime;
+  const dt = Math.min(clockT.getDelta(), 0.1), t = clockT.elapsedTime;
   coreU.uTime.value = t; coreU.uStorm.value = V.storm;
   frameHooks.forEach(fn => fn(dt, t));
 
@@ -370,7 +315,7 @@ function frame() {
   cloud.rotation.y += dt * (0.12 + V.storm * 1.2);
   cloud.scale.setScalar(1 + V.storm * 0.2);
   orbits.forEach(o => { o.rotation.x += o.userData.spin.x * dt * (1 + V.storm * 4); o.rotation.y += o.userData.spin.y * dt * (1 + V.storm * 4); });
-  CORE.position.y = CORE_POS.y + Math.sin(t * 1.1) * 0.12;
+  CORE.position.y = corePos.y + Math.sin(t * 1.1) * 0.12;
   padRing.material.opacity = 0.6 + 0.3 * Math.sin(t * 2) + V.storm;
   if (S.built) coreLight.intensity = 10 + V.storm * 30 + Math.sin(t * 3) * 1.5;
   bloom.strength = 0.5 + V.storm * 0.35;
@@ -393,5 +338,6 @@ function frame() {
 }
 export const startLoop = () => frame();
 
-export { renderer, scene, world, camera, controls, std, glow, mesh, build, BUILD, screenTexture, deskMat, legMat,
+export { shown, renderer, scene, world, camera, controls, std, glow, mesh, build, BUILD, screenTexture, deskMat, legMat, tiles, windowPanes,
+  sun, hemi, windowLight, pedestal, coreLight, corePos, setCorePos, setCoreVisible, composer, bloom,
   CORE, coreBall, coreU, burst, ring3d, flash, kick, boost, stormEvent, sendPulse, RoundedBoxGeometry, THREE };

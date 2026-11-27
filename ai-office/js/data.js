@@ -34,31 +34,10 @@ export const BUILTIN = [
              'من عليه ضغط زائد؟': 'سيج يعمل بـ140% من حجم التذاكر المعتاد اليوم. أقترح نقل طابور الاسترداد إلى بيب بعد الظهر.' } },
 ];
 
-// [x, z, door side]: each desk sits in its own glass office; the door opens onto a corridor (+1 = east wall, -1 = west wall)
-export const SLOTS = [[-5.2, -5.15, 1], [-0.6, -5.15, -1], [-5.2, -1.15, 1], [-0.6, -1.15, -1], [-5.2, 2.85, 1], [-0.6, 2.85, -1], [5.6, -5.15, -1], [5.6, 2.85, -1]];
 export const NEW_COLORS = ['#22d3ee', '#a3e635', '#f97316', '#f472b6', '#94a3b8', '#e879f9'];
 export const CORE_POS = new THREE.Vector3(5.2, 2.3, -1.3);
 export const BASE_CORE = new THREE.Color('#9d7bff');
 export const ROOM_H = 1.3, SIT = 1.45;
-
-// corridor graph: the west corridor between the two office columns, the front walkway, and the lounge corridor by the core
-export const NODES = {
-  c1_cool: [-2.9, -7.0], c1_r1: [-2.9, -5.6], c1_r2: [-2.9, -1.6], c1_r3: [-2.9, 2.4], j1: [-2.9, 5.0],
-  f_sofa: [-6.0, 5.0], f_mid: [-0.2, 5.0], j2: [2.5, 5.0], f_coffee: [6.0, 5.0],
-  c2_plant: [2.5, -6.6], c2_e1: [2.5, -5.6], c2_core: [2.5, -1.3], c2_e2: [2.5, 2.4],
-};
-export const LINES = [['c1_cool', 'c1_r1', 'c1_r2', 'c1_r3', 'j1'], ['f_sofa', 'j1', 'f_mid', 'j2', 'f_coffee'], ['c2_plant', 'c2_e1', 'c2_core', 'c2_e2', 'j2']];
-export const DOOR_NODE = ['c1_r1', 'c1_r1', 'c1_r2', 'c1_r2', 'c1_r3', 'c1_r3', 'c2_e1', 'c2_e2'];
-
-// places to spend a break: [x, z] spots, what they look at (null = keep that axis), and the bubble text
-export const POIS = [
-  { id: 'cooler', node: 'c1_cool', spots: [[-2.9, -7.05]], look: [-2.9, -7.7], m: 'يشرب ماء', f: 'تشرب ماء', drink: true },
-  { id: 'coffee', node: 'f_coffee', spots: [[6.65, 6.0], [6.65, 6.8]], look: [7.4, null], m: 'يشرب قهوة', f: 'تشرب قهوة', drink: true },
-  { id: 'sofa', node: 'f_sofa', spots: [[-6.62, 5.65], [-6.62, 6.75]], look: [0, null], sit: true, m: 'يستريح قليلاً', f: 'تستريح قليلاً' },
-  { id: 'plant', node: 'c2_plant', spots: [[2.6, -6.75]], look: [3.3, -7.35], m: 'يسقي النبتة', f: 'تسقي النبتة', drink: true },
-  { id: 'core', node: 'c2_core', spots: [[3.25, -1.65], [3.25, -0.95]], look: [5.2, -1.3], m: 'يراقب الخلية', f: 'تراقب الخلية' },
-  { id: 'walk', node: 'f_mid', spots: [[-0.9, 6.5], [0.5, 6.5]], look: [null, 9], m: 'يتمشى', f: 'تتمشى' },
-];
 
 export const STATUS = [
   { id: 'todo', label: 'قائمة' },

@@ -5,7 +5,8 @@ import { S, byKey, isFemale } from './state.js';
 import { STATUS } from './data.js';
 import { put, del } from './store.js';
 import { AI, aiReady, identity, errText, noteFatal } from './ai.js';
-import { goWork, goVisit, goHome, showBubble } from './agents.js';
+import { goWork, goVisit, goHome, showBubble, walkTo, nudgeMood } from './agents.js';
+import { spotsOn, mainFloor } from './floors.js';
 import { THREE, camera, renderer, handoffBeam, sendPulse, stormEvent } from './scene.js';
 import { addEvent } from './log.js';
 import { notify, registerActions } from './notify.js';
@@ -84,6 +85,7 @@ async function runStep(t, ag) {
   emit('agents-changed');
   const f = isFemale(ag.a);
   addEvent(ag, `${f ? 'بدأت' : 'بدأ'} العمل على «${t.title}»`, t.id);
+  if (t.step === 0 && !t.kickedOff && new Set(t.chain).size > 1 && !S.meeting.running) await kickoff(t);
   await goWork(ag);
   if (taskById(t.id) !== t || ag.task !== t.id || t.status !== 'doing') { if (ag.task === t.id) { ag.task = null; ag.progress = -1; } return; }
   ag.kick = 1; showBubble(ag, 'بدأت العمل', 2200);
@@ -140,6 +142,21 @@ async function runStep(t, ag) {
   schedule();
 }
 
+/** Shared task: everyone on it meets at the meeting table first, agrees who does what, then goes back to work. */
+async function kickoff(t) {
+  t.kickedOff = true; save(t);
+  const seats = spotsOn(mainFloor().id, ['table']);
+  const members = [...new Set(t.chain)].map(byKey).filter(o => o && (!o.task || o.task === t.id));
+  if (!seats.length || members.length < 2) return;
+  addEvent(members[0], `اجتماع قصير حول «${t.title}» على طاولة الاجتماعات`, t.id);
+  const arrive = Promise.all(members.map((o, i) => walkTo(o, { ...seats[i % seats.length], floor: mainFloor().id, kind: 'table', until: Infinity }, 1.9)));
+  await Promise.race([arrive, wait(45000)]);
+  const say = [m => `سأبدأ بـ«${clip(t.title, 26)}»`, () => 'وأنا أكمل بعدك', () => 'وأنا أراجع وأسلّم'];
+  for (let i = 0; i < members.length; i++) { showBubble(members[i], say[Math.min(i, 2)](members[i]), 2600); members[i].kick = 1; await wait(1500); }
+  await wait(900);
+  members.forEach(o => goHome(o));
+}
+
 async function handoff(t, from, to) {
   const f = isFemale(from.a);
   t.step++; t.status = 'doing'; save(t);
@@ -170,6 +187,7 @@ export function approve(t) {
   if (!t || t.status !== 'review') return;
   const ag = byKey(t.chain[t.chain.length - 1]);
   if (ag) addEvent(ag, `وافقت على «${t.title}»`, t.id);
+  t.chain.forEach(k => { const o = byKey(k); if (o) { nudgeMood(o, 10); showBubble(o, 'رائع، شكراً!', 2200); } });
   finishDone(t);
 }
 export function revise(t) {
@@ -180,7 +198,7 @@ export function revise(t) {
   const send = button('btn primary', 'أرسل الملاحظات', () => {
     const v = ta.value.trim(); if (!v) return ta.focus();
     t.feedback = v; t.status = 'todo'; t.paused = false; t.error = ''; save(t);
-    const ag = byKey(currentKey(t)); if (ag) addEvent(ag, `طلبت تعديلات على «${t.title}»`, t.id);
+    const ag = byKey(currentKey(t)); if (ag) { addEvent(ag, `طلبت تعديلات على «${t.title}»`, t.id); nudgeMood(ag, -8); }
     close(); schedule();
   });
   close = openModal('طلب تعديل', frag, [send]);

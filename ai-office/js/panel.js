@@ -2,7 +2,8 @@
 import { $, el, button, on, fmtTime } from './util.js';
 import { S, isFemale } from './state.js';
 import { STATUS } from './data.js';
-import { statusText, atDesk } from './agents.js';
+import { statusText, atDesk, moodOf } from './agents.js';
+import { floorById } from './floors.js';
 import { renderChat, stopChat } from './chat.js';
 import { openFile } from './modal.js';
 import { openNewTask, currentKey } from './tasks.js';
@@ -43,6 +44,15 @@ function renderOverview(ag) {
   const a = ag.a, box = $('ov'); box.replaceChildren();
   const pill = el('span', 'statepill'); pill.style.setProperty('--sc', stateColor(ag)); pill.append(el('i'), document.createTextNode(statusText(ag)));
   box.append(pill);
+  const meter = (label, pct, color, text) => {
+    const m = el('div', 'meter'); m.style.setProperty('--mc', color);
+    const bar = el('div', 'bar'); bar.append(el('i')); bar.firstChild.style.width = Math.round(pct) + '%';
+    m.append(el('span', '', label), bar, el('span', 'muted', text)); return m;
+  };
+  const mood = moodOf(ag);
+  box.append(meter('الطاقة', ag.energy, ag.energy < 30 ? '#ff6b6b' : ag.energy < 55 ? '#ffc53d' : '#34e08a', Math.round(ag.energy) + '%'),
+    meter('المزاج', Math.min(100, ag.energy * 0.7 + 30 + ag.moodBoost), mood.color, mood.label));
+  const fl = floorById(a.floorId); if (fl) box.append(el('div', 'muted', `${a.personality ? a.personality + ' · ' : ''}${fl.name}`));
 
   const mine = S.tasks.filter(t => t.chain.includes(a.key));
   const current = S.tasks.find(t => t.id === ag.task);

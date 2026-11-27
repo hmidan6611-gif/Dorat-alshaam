@@ -3,7 +3,8 @@ import { $, el, button, pick, gsap, D, fmtTime, clip, emit } from './util.js';
 import { S, byKey, isFemale } from './state.js';
 import { put } from './store.js';
 import { AI, aiReady, errText, noteFatal, ERR } from './ai.js';
-import { goHome, showBubble } from './agents.js';
+import { goHome, showBubble, walkTo } from './agents.js';
+import { spotsOn, mainFloor } from './floors.js';
 import { sendPulse, boost, stormEvent } from './scene.js';
 import { addLog } from './log.js';
 import { speakLines, stopVoice, canSpeak, isAutoRead } from './voice.js';
@@ -101,11 +102,24 @@ ${members}
 {"discussion":[{"key":"مفتاح العضو","text":"..."}],"plan":[{"step":"...","owner":"مفتاح العضو"}],"summary":"جملتان تلخصان القرار"}`;
 }
 
+/** Everyone walks to the meeting table; those without a chair stand around it. */
+function seatEveryone() {
+  const fid = mainFloor().id, seats = spotsOn(fid, ['table']), table = seats[0]?.obj;
+  S.agents.forEach((o, i) => {
+    if (o.task) return; // busy agents stay at their desks
+    if (seats[i]) return walkTo(o, { ...seats[i], floor: fid, kind: 'table', until: Infinity }, 2.2);
+    if (!table) return goHome(o, true);
+    const ang = -Math.PI / 2 + (i - seats.length) * 0.55, x = table.x + Math.cos(ang) * 2.1, z = table.z + Math.sin(ang) * 1.9;
+    walkTo(o, { x, z, face: Math.atan2(table.x - x, table.z - z), floor: fid, kind: 'table', sit: false, until: Infinity }, 2.2);
+  });
+}
+const everyoneBack = () => S.agents.forEach(o => { if (o.mv.dest?.kind === 'table') goHome(o); });
+
 export async function runMeeting(topic) {
   if (meeting.running) return;
   if (!aiReady()) { renderMeetHome(); return; }
   meeting.running = true; ui.setTabState('meet'); stopVoice();
-  S.agents.forEach(o => goHome(o, true));
+  seatEveryone();
   const box = mp(); box.replaceChildren();
   box.append(el('div', 'topic', topic));
   const status = el('div', 'status', 'الفريق يتناقش… قد يستغرق ذلك دقيقة أو أكثر.');
@@ -118,7 +132,7 @@ export async function runMeeting(topic) {
   try {
     res = await AI.sample.json(meetingPrompt(topic), { modelTier: 'complex', signal: meeting.ctl.signal });
   } catch (e) {
-    clearInterval(fidget); meeting.running = false; emit('meeting-ended');
+    clearInterval(fidget); meeting.running = false; everyoneBack(); emit('meeting-ended');
     renderMeetHome();
     if (e?.code !== 'cancelled') { mp().prepend(el('p', 'lead', errText(e))); noteFatal(e); }
     return;
@@ -130,7 +144,7 @@ export async function runMeeting(topic) {
   const plan = (Array.isArray(res?.plan) ? res.plan : [])
     .filter(p => p && typeof p.step === 'string' && p.step.trim())
     .map(p => ({ step: p.step.trim().slice(0, 300), owner: typeof p.owner === 'string' ? p.owner : '', ownerName: byKey(p.owner)?.a.name || '' })).slice(0, 8);
-  if (!lines.length) { meeting.running = false; emit('meeting-ended'); renderMeetHome(); mp().prepend(el('p', 'lead', ERR.invalid_json)); return; }
+  if (!lines.length) { meeting.running = false; everyoneBack(); emit('meeting-ended'); renderMeetHome(); mp().prepend(el('p', 'lead', ERR.invalid_json)); return; }
   const m = { id: 'm' + Date.now().toString(36), topic, lines, plan, summary: typeof res.summary === 'string' ? res.summary.slice(0, 500) : '', at: Date.now() };
 
   status.textContent = 'الاجتماع جارٍ';
@@ -152,7 +166,7 @@ export async function runMeeting(topic) {
   plan.forEach(p => { const ag = byKey(p.owner); if (ag) addLog(ag, p.step); });
   S.meetings = [m, ...S.meetings.filter(x => x.id !== m.id)].slice(0, 12);
   put('meetings', m.id, m);
-  meeting.running = false; emit('meeting-ended');
+  meeting.running = false; everyoneBack(); emit('meeting-ended');
   renderMeetResult(m, true);
   mp().scrollTop = mp().scrollHeight;
   if (isAutoRead()) listenButton(m).click();
