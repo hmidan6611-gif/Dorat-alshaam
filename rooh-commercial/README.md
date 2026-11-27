@@ -23,3 +23,14 @@ Ultra-photorealistic high-fashion streetwear CGI commercial, pure seamless white
 ## ملاحظة
 
 النماذج الحالية تتبع التوقيت الدقيق للقطات بشكل تقريبي؛ قد يحتاج التقسيم والشاشات المنقسمة وكتابة "ROOH" إلى أكثر من محاولة، أو توليد اللقطات منفصلة وتجميعها في المونتاج.
+
+## النسخة المبرمجة المجانية (جاهزة)
+
+`ROOH_commercial_16x9.mp4` — 1920×1080، 30fps، مدته 10.0 ثوانٍ بالضبط، مع موسيقى مُولّدة (120 BPM) متزامنة مع القطعات.
+
+المصدر في `source/`:
+- `index.html` — المشهد ثلاثي الأبعاد (Three.js 0.169) + الطباعة والشاشات المنقسمة. `renderAt(t)` يرسم أي لحظة.
+- `render.js` — يصوّر الإطارات عبر Playwright: `node render.js frames <out> 0 600 60`
+- `music.py` — يولّد الموسيقى: `python3 music.py music.wav`
+- التجميع: `ffmpeg -framerate 60 -i f%04d.png -i music.wav -filter_complex "[0:v]tmix=frames=2,fps=30,format=yuv420p[v]" -map "[v]" -map 1:a -c:v libx264 -crf 16 -c:a aac -t 10 out.mp4`
+  (يحتاج `npm i three@0.169.0 @fontsource/anton@5.1.0` وخادم محلي على المنفذ 8765)
