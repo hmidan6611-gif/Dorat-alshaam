@@ -39,6 +39,10 @@
     <button class="iconbtn" id="edit-btn" aria-pressed="false" title="تحرير المكتب" aria-label="تحرير المكتب">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
     </button>
+    <button class="iconbtn bell" id="settings-btn" title="الإعدادات: الصوت والجودة" aria-label="الإعدادات: الصوت والجودة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span class="count on" id="sound-on" hidden>♪</span>
+    </button>
     <button class="iconbtn" id="replay" title="إعادة بناء المكتب" aria-label="إعادة بناء المكتب">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
     </button>
@@ -159,6 +163,19 @@
   <ul id="notes-list"></ul>
 </section>
 <div id="modal-root"></div>
+<section class="settings glass" id="settings-pop" hidden aria-label="الإعدادات">
+  <header><b>الإعدادات</b><button class="iconbtn" id="settings-close" aria-label="إغلاق الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="pane">
+    <label class="check"><input type="checkbox" id="set-sfx">أصوات المكتب: كيبورد، خطوات، قهوة</label>
+    <label class="check"><input type="checkbox" id="set-music">موسيقى مكتب هادئة</label>
+    <label class="field">مستوى الصوت<input type="range" id="set-vol" min="0" max="100" step="5"></label>
+    <label class="field">جودة الرسوم<select id="set-quality">
+      <option value="auto">تلقائي حسب سرعة الجهاز</option><option value="high">عالية: ظلال ناعمة وانعكاسات</option>
+      <option value="balanced">متوازنة</option><option value="low">منخفضة: أسرع</option></select></label>
+    <span class="muted" id="set-q-now"></span>
+    <div class="row phone-only"><button class="btn" id="set-cam" type="button">وضع المدير</button><button class="btn" id="set-edit" type="button">تحرير المكتب</button><button class="btn" id="set-replay" type="button">إعادة البناء</button></div>
+  </div>
+</section>
 <section class="dash glass" id="dash" hidden aria-label="الإحصائيات">
   <header><h2>الإحصائيات</h2><span class="muted">إنتاجية الفريق ووقت العمل. لا تشمل التكلفة لأن الصفحة لا تعرف استهلاكك الفعلي.</span>
     <button class="iconbtn" id="dash-close" aria-label="إغلاق الإحصائيات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>

@@ -15,7 +15,7 @@ export const objAt = (floorId, id) => floorById(floorId)?.objects.find(o => o.id
 function shell(floor, parent) {
   const tint = new THREE.Color(floor.color || '#3d6bff');
   const plate = mesh(new THREE.BoxGeometry(16, 0.4, 16), std(new THREE.Color('#0b1332').lerp(tint, 0.06), { roughness: 0.85 }), 0, -0.2, 0, parent);
-  build(plate, 'floor');
+  build(plate, 'floor'); parent.userData.plate = plate;
   const pts = [];
   for (let i = -8; i <= 8; i += 2) pts.push(i, 0.011, -8, i, 0.011, 8, -8, 0.011, i, 8, 0.011, i);
   const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));

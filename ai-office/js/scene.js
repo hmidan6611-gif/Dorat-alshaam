@@ -303,6 +303,7 @@ export function runBuild() {
 
 /* --------------------------------------------------------------- frame loop */
 const frameHooks = [];
+export const Q = { bloom: true, level: 'balanced' }; // render quality, set by quality.js
 export const onFrame = fn => frameHooks.push(fn);
 const clockT = new THREE.Clock();
 function frame() {
@@ -333,7 +334,7 @@ function frame() {
   world.position.set((Math.random() - 0.5) * V.shake * 0.25, (Math.random() - 0.5) * V.shake * 0.25, 0);
   controls.update();
   updateProjection();
-  composer.render();
+  if (Q.bloom) composer.render(); else renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 export const startLoop = () => frame();

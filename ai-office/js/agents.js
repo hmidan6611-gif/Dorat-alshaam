@@ -358,13 +358,15 @@ onFrame((dt, t) => {
     P.disc.material.opacity = 0.05 + o.selA * 0.08 + o.boost * 0.15;
     P.inner.rotation.z += dt * (0.4 + o.boost * 3);
     if (P.ring.scale.x > 0.999 && S.built) P.ring.scale.x = P.ring.scale.y = 1 + o.boost * 0.08 + o.selA * 0.04;
+    P.screenLight.visible = !S.lowLights;
     P.screenLight.intensity = w ? 1.2 + Math.sin(t * 9 + k) * 0.2 : 0.4;
 
     // label above the head (only on the floor being viewed)
     const onView = o.curFloor === S.viewFloor;
     if (!onView) { o.tag.style.opacity = 0; return; }
     tmp.set(0, 2.6, 0); o.robot.localToWorld(tmp); tmp.y = 2.6 + o.robot.position.y; tmp.project(camera);
-    const hw = (o.tag.offsetWidth || 80) / 2 + 8;
+    if (!o.tagW || (o._wt = (o._wt || 0) + 1) % 30 === 0) o.tagW = o.tag.offsetWidth || 80; // measuring every frame is slow
+    const hw = o.tagW / 2 + 8;
     const sx = Math.min(innerWidth - hw, Math.max(hw, (tmp.x * 0.5 + 0.5) * innerWidth)), sy = (-tmp.y * 0.5 + 0.5) * innerHeight;
     if (o.progress >= 0) { o.prog.classList.add('on'); o.prog.firstChild.style.width = Math.round(o.progress * 100) + '%'; } else o.prog.classList.remove('on');
     o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;

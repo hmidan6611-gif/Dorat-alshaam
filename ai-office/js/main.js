@@ -22,6 +22,8 @@ import { initFloorsUI, renderFloorsUI } from './floorsui.js';
 import { initEditor, setEditing } from './editor.js';
 import { initDashboard, openDashboard } from './dashboard.js';
 import { initManager } from './manager.js';
+import { initQuality } from './quality.js';
+import { initSettings } from './settings.js';
 
 /* --------------------------------------------------------------- the office */
 S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, objects: defaultMainObjects() }];
@@ -212,7 +214,7 @@ async function restore() {
       S.agents.forEach(ag => { if (!main.objects.some(o => o.id === ag.a.officeId)) { const o = main.objects.find(x => x.agentKey === ag.a.key); if (o) ag.a.officeId = o.id; } bindOffice(ag); });
     } else if (!floorById(f.id)) {
       const fl = { id: f.id, name: f.name || 'طابق', dept: f.dept || '', color: f.color || '#3d6bff', order: f.order || S.floors.length, objects: f.objects };
-      S.floors.push(fl); buildFloor(fl);
+      S.floors.push(fl); buildFloor(fl); dispatchEvent(new Event('deskhive-floor-added'));
     }
   }
   restoreAgents(data.agents);
@@ -246,6 +248,8 @@ initFloorsUI({ viewFloor, select, renderTeam });
 initEditor({ select, showPanel });
 initDashboard({ onClose: () => setTab('office') });
 initManager({ pickAgent });
+initQuality();
+initSettings();
 renderTeam();
 restore();
 runBuild();

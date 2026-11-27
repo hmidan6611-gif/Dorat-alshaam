@@ -40,7 +40,7 @@ function openAddFloor() {
     const v = name.value.trim(); if (!v) return name.focus();
     const preset = PRESETS.find(p => p.name === v);
     const f = { id: uid('fl'), name: v.slice(0, 24), dept: preset?.dept || v, color: preset?.color || color, order: S.floors.length, objects: defaultDeptObjects(3) };
-    S.floors.push(f); buildFloor(f, true); saveFloor(f);
+    S.floors.push(f); buildFloor(f, true); saveFloor(f); dispatchEvent(new Event('deskhive-floor-added'));
     close(); renderFloorsUI(); ui.viewFloor(f.id);
   });
   close = openModal('طابق جديد', frag, [go]);

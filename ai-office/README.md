@@ -10,22 +10,34 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 
 | File | What it does |
 | --- | --- |
-| `index.html` | Page markup: top bar, team list, agent panel, task board, meeting and new-agent panels |
+| `index.html` | Page markup: top bar, team list, panels, board, dashboard, editor bar, settings |
 | `css/office.css` | All styles (dark neon look, RTL, phone layout) |
-| `js/main.js` | Entry point: wires tabs, team list, selection, picking, ambient office life, restore |
-| `js/scene.js` | Three.js renderer, camera, room, hive core, effects, hand-off beam, build animation, frame loop |
-| `js/agents.js` | Agent stations (glass office, desk, robot), walking on the corridor graph, breaks, errands, labels |
-| `js/data.js` | Built-in agents, desk slots, corridor graph, break spots, task statuses |
-| `js/state.js` | Shared state |
-| `js/tasks.js` | Kanban board, drag and drop, Claude doing the work, hand-offs, review and approval |
+| `js/main.js` | Entry point: builds floors and agents, tabs, team list and search, selection, picking, ambient life, restore |
+| `js/scene.js` | Three.js renderer, camera, hive core, effects, hand-off beam, build animation, frame loop |
+| `js/layout.js` | Offices and furniture as data: drawing, obstacles, interaction spots, default floors |
+| `js/floors.js` | Floor groups and room shells, drawing objects, which floor is visible, office placement |
+| `js/floorsui.js` | Floor switcher and adding department floors |
+| `js/nav.js` | Walking grid per floor and A* pathfinding |
+| `js/agents.js` | Robots (shapes), walking, elevator rides, breaks, energy and mood, greetings, labels |
+| `js/daycycle.js` | Morning, noon, sunset and night lighting |
+| `js/tasks.js` | Kanban board, drag and drop, Claude doing the work, kickoff meetings, hand-offs, approvals |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
 | `js/chat.js` | Chat with one agent |
-| `js/meeting.js` | Team meeting and turning its plan into tasks |
-| `js/newagent.js` | Creating and restoring custom agents |
+| `js/meeting.js` | Team meeting at the table and turning its plan into tasks |
+| `js/newagent.js` | Creating agents (look, personality, voice, floor) and restoring them |
+| `js/editor.js` | Office editor: add, drag, rotate, delete; refuses changes that trap an agent |
+| `js/dashboard.js` | Statistics: totals, per-agent productivity, tasks per day, table, activity |
+| `js/manager.js` | Manager mode: free camera, follow an agent, keyboard movement |
+| `js/audio.js` | Synthesized keyboard, footsteps, pouring, chime and calm music |
+| `js/quality.js` | Quality levels and automatic adjustment from the frame rate |
+| `js/reflect.js` | Floor reflections for the orthographic camera |
+| `js/settings.js` | Settings menu: sound, music, volume, quality |
 | `js/notify.js` | Toasts and the notification list |
-| `js/log.js` | Work log and Output tab |
+| `js/log.js` | Work log |
 | `js/modal.js` | Dialogs and the file viewer |
 | `js/store.js` | Saving to the artifact database or browser storage |
 | `js/ai.js` | Claude availability, errors and agent personas |
 | `js/voice.js` | Reading replies aloud and dictation |
-| `js/util.js` | Small helpers and an event bus |
+| `js/state.js`, `js/data.js`, `js/util.js` | Shared state, static data, helpers and an event bus |
+
+Add `?hour=22` to the address to start the fast day clock at a given hour, and `?debug` to expose state for automated checks.

@@ -2,6 +2,7 @@
 import { $, el, button, uid, fmtTime } from './util.js';
 import { S, byKey } from './state.js';
 import { put } from './store.js';
+import { playChime } from './audio.js';
 
 const actionsFor = new Map(); // kind -> (note) => [{label, cls, run}]
 export const registerActions = (kind, fn) => actionsFor.set(kind, fn);
@@ -12,6 +13,7 @@ export function notify({ text, kind = 'info', taskId = '', agentKey = '' }) {
   S.notes.unshift(n); S.notes.length = Math.min(S.notes.length, 100);
   put('notes', n.id, n);
   toast(n);
+  if (kind === 'done' || kind === 'approve') playChime();
   renderNotes();
   return n;
 }
