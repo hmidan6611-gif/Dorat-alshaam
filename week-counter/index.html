@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عداد أيام الأسبوع</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --text: #1f2328; --muted: #6b7280;
+    --accent: #0f766e; --accent-soft: #ccfbf1; --border: #e5e7eb; --today: #b45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111418; --card: #1a1f25; --text: #e6e8eb; --muted: #9aa3ad;
+      --accent: #2dd4bf; --accent-soft: #134e4a; --border: #2a3139; --today: #f59e0b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111418; --card: #1a1f25; --text: #e6e8eb; --muted: #9aa3ad;
+    --accent: #2dd4bf; --accent-soft: #134e4a; --border: #2a3139; --today: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+    display: flex; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 560px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  .current { text-align: center; }
+  .current .label { color: var(--muted); font-size: .9rem; }
+  .current .day { font-size: 3rem; font-weight: 700; color: var(--accent); margin: 6px 0; }
+  .current .meta { color: var(--muted); font-size: .9rem; min-height: 1.2em; }
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 18px; }
+  .week div {
+    text-align: center; padding: 10px 2px; border-radius: 10px;
+    border: 1px solid var(--border); font-size: .8rem; position: relative;
+  }
+  .week .active { background: var(--accent); color: var(--card); border-color: var(--accent); font-weight: 700; }
+  .week .done { background: var(--accent-soft); }
+  .week .is-today::after {
+    content: ""; position: absolute; top: 4px; left: 4px; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--today);
+  }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+  .stats b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .stats span { color: var(--muted); font-size: .8rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 12px; }
+  button, select, input {
+    font: inherit; color: var(--text); background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--card); border-color: var(--accent); font-weight: 600; }
+  input[type="number"] { width: 90px; }
+  .grow { flex: 1; }
+  .answer { margin-top: 10px; color: var(--accent); font-weight: 600; min-height: 1.3em; }
+  .hint { color: var(--muted); font-size: .8rem; text-align: center; }
+  label { font-size: .9rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>عداد أيام الأسبوع الذكي</h1>
+  <p class="sub">يعدّ أيام الأسبوع بالترتيب، ويحسب الأسابيع المكتملة وعدد الأيام.</p>
+
+  <section class="card current">
+    <div class="label">اليوم الحالي في العداد</div>
+    <div class="day" id="day">—</div>
+    <div class="meta" id="meta"></div>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section class="card stats">
+    <div><b id="total">0</b><span>إجمالي الأيام</span></div>
+    <div><b id="weeks">0</b><span>أسابيع مكتملة</span></div>
+    <div><b id="pos">1</b><span>ترتيب اليوم</span></div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <button id="prev">▶ السابق</button>
+      <button class="primary grow" id="next">اليوم التالي ◀</button>
+      <button id="auto">تشغيل تلقائي</button>
+    </div>
+    <div class="row">
+      <label for="speed">السرعة</label>
+      <select id="speed">
+        <option value="2000">بطيء</option>
+        <option value="1000" selected>عادي</option>
+        <option value="400">سريع</option>
+      </select>
+      <label for="start">بداية الأسبوع</label>
+      <select id="start">
+        <option value="6">السبت</option>
+        <option value="0">الأحد</option>
+        <option value="1">الاثنين</option>
+      </select>
+    </div>
+    <div class="row">
+      <button id="today">ابدأ من اليوم الحقيقي</button>
+      <button id="reset">إعادة تعيين</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <label for="n">ما اليوم بعد</label>
+      <input type="number" id="n" value="10" min="-9999" max="9999">
+      <label>يوم من اليوم الحالي؟</label>
+      <button id="calc">احسب</button>
+      <button id="jump">انتقل إليه</button>
+    </div>
+    <div class="answer" id="answer"></div>
+  </section>
+
+  <p class="hint">اختصارات: المسافة أو ← لليوم التالي، → للسابق، A للتشغيل التلقائي</p>
+</main>
+
+<script>
+  // أسماء الأيام حسب ترتيب JavaScript (0 = الأحد)
+  const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  const KEY = "week-counter-state";
+  const $ = id => document.getElementById(id);
+
+  // الحالة: يوم البداية في الأسبوع + عدد الخطوات (يمكن أن يكون سالباً)
+  let state = { start: 6, origin: 6, steps: 0 };
+  try { Object.assign(state, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+
+  const mod = (a, b) => ((a % b) + b) % b;
+  const dayAt = steps => mod(state.origin + steps, 7);           // رقم اليوم (0-6)
+  const order = d => mod(d - state.start, 7);                    // ترتيبه في الأسبوع (0-6)
+  const realToday = () => new Date().getDay();
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function render() {
+    const d = dayAt(state.steps);
+    const pos = order(d);
+    // الأسابيع المكتملة = عدد مرات المرور بآخر يوم في الأسبوع منذ البداية
+    const fromStart = order(state.origin) + state.steps;
+    const weeks = Math.max(0, Math.floor((fromStart + 1) / 7));
+
+    $("day").textContent = DAYS[d];
+    $("total").textContent = Math.abs(state.steps) + 1;
+    $("weeks").textContent = weeks;
+    $("pos").textContent = pos + 1;
+    $("meta").textContent = d === realToday() ? "هذا هو يوم اليوم الحقيقي" :
+      `اليوم التالي: ${DAYS[mod(d + 1, 7)]}`;
+
+    const week = $("week");
+    week.innerHTML = "";
+    for (let i = 0; i < 7; i++) {
+      const di = mod(state.start + i, 7);
+      const el = document.createElement("div");
+      el.textContent = DAYS[di];
+      if (i === pos) el.className = "active";
+      else if (i < pos) el.className = "done";
+      if (di === realToday()) el.classList.add("is-today");
+      week.appendChild(el);
+    }
+    $("start").value = String(state.start);
+    save();
+  }
+
+  function step(n) { state.steps += n; render(); }
+
+  let timer = null;
+  function toggleAuto() {
+    if (timer) { clearInterval(timer); timer = null; $("auto").textContent = "تشغيل تلقائي"; return; }
+    timer = setInterval(() => step(1), Number($("speed").value));
+    $("auto").textContent = "إيقاف";
+  }
+
+  $("next").onclick = () => step(1);
+  $("prev").onclick = () => step(-1);
+  $("auto").onclick = toggleAuto;
+  $("speed").onchange = () => { if (timer) { toggleAuto(); toggleAuto(); } };
+  $("start").onchange = e => { state.start = Number(e.target.value); state.origin = state.start; state.steps = 0; render(); };
+  $("today").onclick = () => { state.origin = realToday(); state.steps = 0; render(); };
+  $("reset").onclick = () => { state.origin = state.start; state.steps = 0; $("answer").textContent = ""; render(); };
+
+  function readN() { const n = parseInt($("n").value, 10); return Number.isFinite(n) ? n : 0; }
+  $("calc").onclick = () => {
+    const n = readN();
+    const target = DAYS[dayAt(state.steps + n)];
+    $("answer").textContent = n >= 0
+      ? `بعد ${n} يوم من ${DAYS[dayAt(state.steps)]} يكون: ${target}`
+      : `قبل ${-n} يوم من ${DAYS[dayAt(state.steps)]} كان: ${target}`;
+  };
+  $("jump").onclick = () => { step(readN()); $("answer").textContent = ""; };
+
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key === " " || e.key === "ArrowLeft") { e.preventDefault(); step(1); }
+    else if (e.key === "ArrowRight") step(-1);
+    else if (e.key.toLowerCase() === "a") toggleAuto();
+  });
+
+  render();
+</script>
+</body>
+</html>
