@@ -195,7 +195,7 @@ function stormEvent(ag, color, strength = 1) {
   flash(color, 0.6 * strength); kick(0.7 * strength);
   burst(CORE, color, 90, 6, 2.2, 0.15); burst(CORE, '#ffffff', 30, 3.5, 1.6, 0.1);
   ring3d(CORE, color, 8, 1.5, 0.35); gsap.delayedCall(D(0.18), () => ring3d(CORE, '#ffffff', 5, 1.3, 0.25));
-  if (ag) { ring3d(ag.ring, color, 3.2, 1.2, 0.4); boost(ag, 1.2, 1.6); }
+  if (ag) { ring3d(ag.parts.ring, color, 3.2, 1.2, 0.4); boost(ag, 1.2, 1.6); }
   else S.agents.forEach(o => boost(o, 1.2, 1.6));
 }
 

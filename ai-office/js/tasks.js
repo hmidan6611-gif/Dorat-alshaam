@@ -89,6 +89,7 @@ async function runStep(t, ag) {
   await goWork(ag);
   if (taskById(t.id) !== t || ag.task !== t.id || t.status !== 'doing') { if (ag.task === t.id) { ag.task = null; ag.progress = -1; } return; }
   ag.kick = 1; showBubble(ag, 'بدأت العمل', 2200);
+  const entry = { key: ag.a.key, start: Date.now(), end: 0 }; (t.log ||= []).push(entry); // for the dashboard
   const ctl = new AbortController(); runs.set(t.id, ctl);
   const t0 = Date.now(); let streamed = 0;
   const tick = setInterval(() => {
@@ -126,6 +127,7 @@ async function runStep(t, ag) {
   const title = clip((lines[0] || t.title).replace(/^[#*\s]+|[*\s]+$/g, '') || t.title, 80);
   const file = { id: uid('f'), taskId: t.id, agentKey: ag.a.key, agentName: ag.a.name, title, content: text, at: Date.now() };
   S.files.unshift(file); put('files', file.id, file); emit('files-changed', ag);
+  entry.end = Date.now(); entry.words = text.split(/\s+/).length;
   t.outputs.push(file.id); t.feedback = ''; ag.progress = t.progress = 1; emit('progress', t);
   addEvent(ag, `${f ? 'أنهت' : 'أنهى'} «${t.title}» وكتب${f ? 'ت' : ''} ملف «${title}»`, t.id);
   sendPulse(ag);
@@ -175,7 +177,7 @@ async function handoff(t, from, to) {
 }
 
 function finishDone(t, manual = false) {
-  t.status = 'done'; t.paused = false; t.error = ''; save(t);
+  t.status = 'done'; t.paused = false; t.error = ''; t.doneAt = Date.now(); save(t);
   S.tasksDoneToday++; emit('stats');
   const ag = byKey(t.chain[t.chain.length - 1]);
   if (ag && !manual) {
@@ -197,6 +199,7 @@ export function revise(t) {
   let close;
   const send = button('btn primary', 'أرسل الملاحظات', () => {
     const v = ta.value.trim(); if (!v) return ta.focus();
+    const k = currentKey(t); (t.revBy ||= {})[k] = (t.revBy[k] || 0) + 1;
     t.feedback = v; t.status = 'todo'; t.paused = false; t.error = ''; save(t);
     const ag = byKey(currentKey(t)); if (ag) { addEvent(ag, `طلبت تعديلات على «${t.title}»`, t.id); nudgeMood(ag, -8); }
     close(); schedule();
@@ -274,8 +277,12 @@ export function renderBoard() {
   const cols = $('cols'); if (!cols) return;
   const scroll = [...cols.children].map(c => c.scrollTop);
   cols.replaceChildren();
+  const q = ($('board-q')?.value || '').trim().toLowerCase(), who = $('board-agent')?.value || '';
+  const sel = $('board-agent');
+  if (sel && sel.options.length !== S.agents.length + 1) { const v = sel.value; sel.length = 1; S.agents.forEach(o => sel.append(new Option(o.a.name, o.a.key))); sel.value = v; }
+  const keep = t => (!q || (t.title + ' ' + t.desc).toLowerCase().includes(q)) && (!who || t.chain.includes(who));
   STATUS.forEach((s, i) => {
-    const list = S.tasks.filter(t => t.status === s.id);
+    const list = S.tasks.filter(t => t.status === s.id && keep(t));
     const col = el('div', 'col'); col.dataset.status = s.id;
     const h = el('h3'); h.append(el('span', '', s.label), el('span', '', String(list.length)));
     col.append(h);
@@ -372,5 +379,6 @@ export function restoreTasks() {
 }
 export function initBoard() {
   $('task-new').onclick = () => openNewTask();
+  $('board-q').addEventListener('input', renderBoard); $('board-agent').addEventListener('change', renderBoard);
   renderBoard();
 }

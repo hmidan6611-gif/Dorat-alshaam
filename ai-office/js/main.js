@@ -20,6 +20,8 @@ import { initNewAgent, openNew, restoreAgents, hasRoom } from './newagent.js';
 import { initDayCycle } from './daycycle.js';
 import { initFloorsUI, renderFloorsUI } from './floorsui.js';
 import { initEditor, setEditing } from './editor.js';
+import { initDashboard, openDashboard } from './dashboard.js';
+import { initManager } from './manager.js';
 
 /* --------------------------------------------------------------- the office */
 S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, objects: defaultMainObjects() }];
@@ -35,9 +37,8 @@ function showPanel(name) {
   gsap.to(V, { shift: name ? 1 : 0, duration: D(1), ease: 'power3.inOut' });
 }
 function setTabState(name) {
-  ['office', 'tasks', 'meet', 'output'].forEach(t => $('tab-' + t)?.setAttribute('aria-selected', String(t === name)));
-  const out = name === 'output';
-  $('team').hidden = out; $('log').hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
+  ['office', 'tasks', 'meet', 'dash'].forEach(t => $('tab-' + t)?.setAttribute('aria-selected', String(t === name)));
+  openDashboard(name === 'dash');
 }
 export function viewFloor(id) {
   if (S.viewFloor === id) return;
@@ -66,7 +67,7 @@ function setTab(name) {
   if (S.editing) setEditing(false);
   setTabState(name);
   if (name === 'office') { select(null); showPanel(null); }
-  if (name === 'output') { select(null); }
+  if (name === 'dash') { select(null); showPanel(null); }
   if (name === 'tasks') { select(null); showPanel('board'); focusOn(new THREE.Vector3(0, 0.5, 0), isPhone() ? 0.9 : 0.95); }
   if (name === 'meet') {
     select(null); if (S.viewFloor !== 'main') viewFloor('main');
@@ -77,7 +78,7 @@ const focusHive = () => { select(null); showPanel(null); setTabState('office'); 
 $('tab-office').onclick = () => setTab('office');
 $('tab-tasks').onclick = () => setTab('tasks');
 $('tab-meet').onclick = () => setTab('meet');
-if ($('tab-output')) $('tab-output').onclick = () => setTab('output');
+$('tab-dash').onclick = () => setTab('dash');
 $('replay').onclick = () => { if (!S.meeting.running) { select(null); runBuild(); } };
 $('chat-close').onclick = () => select(null);
 $('board-close').onclick = () => setTab('office');
@@ -88,6 +89,7 @@ function renderTeam() {
   const here = S.agents.filter(o => o.a.floorId === S.viewFloor), away = S.agents.filter(o => o.a.floorId !== S.viewFloor);
   [...here, ...away].forEach(ag => {
     const a = ag.a, li = el('li'), b = el('button', 'member');
+    li.hidden = !matches(ag);
     b.type = 'button'; b.dataset.key = a.key;
     b.style.setProperty('--c', a.color); b.setAttribute('aria-pressed', 'false');
     if (a.floorId !== S.viewFloor) b.style.opacity = '0.6';
@@ -101,6 +103,17 @@ function renderTeam() {
   add.id = 'add-agent'; li.append(add); ul.append(li);
   refreshTeam();
 }
+/* search: filters the team list and dims robots that don't match */
+const norm = s => (s || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+function matches(ag) {
+  const q = norm(S.search); if (!q) return true;
+  const hay = norm([ag.a.name, ag.a.role, ag.a.personality, floorById(ag.a.floorId)?.name, ag.memberBtn?.querySelector('.badge')?.textContent].join(' '));
+  return q.split(/\s+/).every(w => hay.includes(w));
+}
+$('team-search').addEventListener('input', e => {
+  S.search = e.target.value.trim();
+  S.agents.forEach(ag => { if (ag.memberBtn) ag.memberBtn.parentElement.hidden = !matches(ag); ag.dim = !!S.search && !matches(ag); });
+});
 function refreshTeam() {
   S.agents.forEach(ag => {
     const b = ag.memberBtn; if (!b) return;
@@ -128,9 +141,14 @@ function deleteAgent(ag) {
 /* --------------------------------------------------------------- picking robots in the scene */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const visibleHits = () => S.hitMeshes.filter(h => shown(h.parent));
-let down = null;
+let down = null, pendingClick = 0;
+renderer.domElement.addEventListener('dblclick', () => clearTimeout(pendingClick));
 export const pickAgent = (x, y) => {
   ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  // the robot itself wins over the office box it happens to stand in
+  const bots = S.agents.filter(o => o.curFloor === S.viewFloor);
+  const hit = ray.intersectObjects(bots.map(o => o.robot), true)[0];
+  if (hit) { let g = hit.object; while (g && !bots.some(o => o.robot === g)) g = g.parent; const ag = bots.find(o => o.robot === g); if (ag) return ag; }
   return ray.intersectObjects(visibleHits())[0]?.object.userData.ag || null;
 };
 renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
@@ -141,8 +159,10 @@ renderer.domElement.addEventListener('pointerup', e => {
   ray.setFromCamera(ndc, camera);
   if (coreBall.parent.visible && ray.intersectObject(coreBall).length) { focusHive(); return; }
   const ag = pickAgent(e.clientX, e.clientY);
-  if (ag) select(ag === S.focused ? null : ag);
-  else if (S.panel === 'chat') select(null);
+  const act = () => { if (ag) select(ag === S.focused ? null : ag); else if (S.panel === 'chat') select(null); };
+  // in manager mode wait a moment: a second click means "follow", not "open the panel"
+  if (S.manager) { clearTimeout(pendingClick); pendingClick = setTimeout(act, 320); return; }
+  act();
 });
 renderer.domElement.addEventListener('pointermove', e => {
   if (S.editing) return;
@@ -224,6 +244,8 @@ initMeeting({ setTab, setTabState });
 initNewAgent({ select, setTabState, showPanel, viewFloor, focusLounge: () => focusOn(new THREE.Vector3(3, 0.5, 0), isPhone() ? 0.95 : 1) });
 initFloorsUI({ viewFloor, select, renderTeam });
 initEditor({ select, showPanel });
+initDashboard({ onClose: () => setTab('office') });
+initManager({ pickAgent });
 renderTeam();
 restore();
 runBuild();

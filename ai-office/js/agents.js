@@ -369,7 +369,7 @@ onFrame((dt, t) => {
     if (o.progress >= 0) { o.prog.classList.add('on'); o.prog.firstChild.style.width = Math.round(o.progress * 100) + '%'; } else o.prog.classList.remove('on');
     o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
     const lead = S.speaker || S.focused;
-    o.tag.style.opacity = S.built || o.robot.scale.x > 0.99 ? (!lead || lead === o ? 1 : 0.35) : 0;
+    o.tag.style.opacity = S.built || o.robot.scale.x > 0.99 ? (o.dim ? 0.2 : !lead || lead === o ? 1 : 0.35) : 0;
   });
 });
 export { sendPulse };

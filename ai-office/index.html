@@ -20,7 +20,7 @@
     <button role="tab" id="tab-office" aria-selected="true">المكتب</button>
     <button role="tab" id="tab-tasks" aria-selected="false">المهام</button>
     <button role="tab" id="tab-meet" aria-selected="false">اجتماع</button>
-    <button role="tab" id="tab-output" aria-selected="false">المخرجات</button>
+    <button role="tab" id="tab-dash" aria-selected="false">الإحصائيات</button>
   </div>
   <div class="stats">
     <span class="opt"><i class="dot"></i> <b id="st-working">5</b> يعمل</span>
@@ -33,6 +33,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/></svg>
       <span class="count" id="bell-count" hidden>0</span>
     </button>
+    <button class="iconbtn" id="cam-btn" aria-pressed="false" title="وضع المدير: كاميرا حرة" aria-label="وضع المدير: كاميرا حرة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3l2-3h8l2 3h3v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
     <button class="iconbtn" id="edit-btn" aria-pressed="false" title="تحرير المكتب" aria-label="تحرير المكتب">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
     </button>
@@ -44,6 +47,7 @@
 
 <aside class="team glass" aria-label="فريقك">
   <h2><span id="team-title">فريقك</span><span class="save off" id="save-state"></span></h2>
+  <input class="search" id="team-search" type="search" placeholder="ابحث عن وكيل أو تخصص أو حالة" aria-label="بحث في الوكلاء">
   <ul id="team"></ul>
   <ul class="log" id="log" hidden></ul>
 </aside>
@@ -96,6 +100,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </header>
+  <div class="bfilter">
+    <input class="search" id="board-q" type="search" placeholder="ابحث في المهام" aria-label="بحث في المهام">
+    <select id="board-agent" aria-label="فلترة حسب الوكيل"><option value="">كل الوكلاء</option></select>
+  </div>
   <div class="cols" id="cols"></div>
 </section>
 
@@ -151,6 +159,14 @@
   <ul id="notes-list"></ul>
 </section>
 <div id="modal-root"></div>
+<section class="dash glass" id="dash" hidden aria-label="الإحصائيات">
+  <header><h2>الإحصائيات</h2><span class="muted">إنتاجية الفريق ووقت العمل. لا تشمل التكلفة لأن الصفحة لا تعرف استهلاكك الفعلي.</span>
+    <button class="iconbtn" id="dash-close" aria-label="إغلاق الإحصائيات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="dash-body" id="dash-body"></div>
+</section>
+<div class="dtip" id="dash-tip" hidden></div>
+<div class="follow glass" id="follow-chip" hidden><i></i>تتابع الكاميرا: <b id="follow-name"></b><button class="btn" id="follow-stop" type="button">إيقاف</button></div>
+<div class="camhint glass" id="cam-hint" hidden>وضع المدير: اسحب للتدوير، اسحب بزر الفأرة الأيمن أو بإصبعين للتحريك، الأسهم أو WASD للتنقل، ضغطتان على وكيل لمتابعته</div>
 
 <nav class="floors glass" id="floors" aria-label="الطوابق"></nav>
 <section class="editbar glass" id="editbar" hidden aria-label="محرر المكتب">
