@@ -474,17 +474,17 @@ const coreWire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.0, 2), new THREE
 CORE.add(coreWire);
 // particle cloud
 const cloud = (() => {
-  const N = 2600, pos = new Float32Array(N * 3), cols = new Float32Array(N * 3);
+  const N = innerWidth <= 760 ? 1100 : 1800, pos = new Float32Array(N * 3), cols = new Float32Array(N * 3);
   const palette = AGENTS.map(a => new THREE.Color(a.color)).concat([new THREE.Color('#ffffff'), new THREE.Color('#ffffff')]);
   for (let k = 0; k < N; k++) {
-    const r = rand(0.95, 2.5) * (Math.random() < 0.15 ? 1.3 : 1), th = Math.random() * Math.PI * 2, ph = Math.acos(rand(-1, 1));
+    const r = rand(0.95, 1.9) * (Math.random() < 0.12 ? 1.25 : 1), th = Math.random() * Math.PI * 2, ph = Math.acos(rand(-1, 1));
     pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph) * 0.8, r * Math.sin(ph) * Math.sin(th)], k * 3);
     const c = pick(palette); cols.set([c.r, c.g, c.b], k * 3);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-  const p = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.2 * renderer.getPixelRatio(), sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  const p = new THREE.Points(geo, new THREE.PointsMaterial({ size: 1.5 * renderer.getPixelRatio(), sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
   CORE.add(p); return p;
 })();
 const orbits = [1.3, 1.6, 1.95].map((r, k) => {
@@ -520,7 +520,7 @@ function burst(target, color, count = 120, speed = 6, life = 2.2, size = 0.25) {
     vel.push(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(speed * rand(0.3, 1)));
   }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: (3 + size * 8) * renderer.getPixelRatio(), sizeAttenuation: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: (2 + size * 5) * renderer.getPixelRatio(), sizeAttenuation: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
   scene.add(pts);
   bursts.push({ pts, vel, life, max: life });
 }
@@ -546,7 +546,7 @@ function stormEvent(i, color, strength = 1) {
   gsap.fromTo(V, { storm: strength }, { storm: 0, duration: D(2.2), ease: 'power3.out' });
   gsap.delayedCall(D(1.9), () => { gsap.to(coreU.uA.value, { r: BASE_CORE.r, g: BASE_CORE.g, b: BASE_CORE.b, duration: D(1) }); coreLight.color.copy(BASE_CORE); });
   flash(color, 0.6 * strength); kick(0.7 * strength);
-  burst(CORE, color, 170, 7.5, 3, 0.2); burst(CORE, '#ffffff', 60, 4, 2, 0.1);
+  burst(CORE, color, 90, 6, 2.2, 0.15); burst(CORE, '#ffffff', 30, 3.5, 1.6, 0.1);
   ring3d(CORE, color, 8, 1.5, 0.35); gsap.delayedCall(D(0.18), () => ring3d(CORE, '#ffffff', 5, 1.3, 0.25));
   if (i >= 0) { const ag = agentGroups[i]; ring3d(ag.ring, color, 3.2, 1.2, 0.4); boost(i, 1.2, 1.6); }
   else for (let k = 0; k < 6; k++) boost(k, 1.2, 1.6);
@@ -625,7 +625,7 @@ function setTab(name) {
   ['office', 'hive', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
   const out = name === 'output';
   teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
-  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, 1.9); stormEvent(-1, '#c9a6ff', 1); }
+  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, isPhone() ? 1.25 : 1.5); stormEvent(-1, '#c9a6ff', 0.6); }
   if (name === 'office') { onSelect(-1); }
 }
 $('tab-office').onclick = () => setTab('office');
@@ -838,7 +838,7 @@ function runBuild() {
   });
   // the core ignites
   tl.fromTo(coreU.uIgnite, { value: 0 }, { value: 1, duration: D(0.8), ease: 'power2.in' }, 2.0);
-  tl.fromTo(cloud.material, { opacity: 0 }, { opacity: 0.9, duration: D(1.2) }, 2.4);
+  tl.fromTo(cloud.material, { opacity: 0 }, { opacity: 0.32, duration: D(1.2) }, 2.4);
   tl.fromTo(coreWire.material, { opacity: 0 }, { opacity: 0.18, duration: D(1) }, 2.4);
   orbits.forEach((o, k) => tl.fromTo(o.material, { opacity: 0 }, { opacity: 0.6, duration: D(0.8) }, 2.5 + k * 0.1));
   tl.fromTo(coreLight, { intensity: 0 }, { intensity: 14, duration: D(1) }, 2.4);
@@ -884,8 +884,9 @@ function frame() {
     o.ring.scale.x = o.ring.scale.y = o.ring.scale.x > 0.999 && built ? 1 + o.boost * 0.08 + o.selA * 0.04 : o.ring.scale.x;
     o.screenLight.intensity = w ? 1.2 + Math.sin(t * 9 + k) * 0.2 : 0.4;
     // label position
-    tmp.set(0, 2.85, -0.95); o.g.localToWorld(tmp); tmp.project(camera);
-    const sx = (tmp.x * 0.5 + 0.5) * innerWidth, sy = (-tmp.y * 0.5 + 0.5) * innerHeight;
+    tmp.set(0, 2.6, -0.95); o.g.localToWorld(tmp); tmp.project(camera);
+    const hw = (o.tag.offsetWidth || 80) / 2 + 8;
+    const sx = Math.min(innerWidth - hw, Math.max(hw, (tmp.x * 0.5 + 0.5) * innerWidth)), sy = (-tmp.y * 0.5 + 0.5) * innerHeight;
     o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
     o.tag.style.opacity = built ? (focusIdx < 0 || focusIdx === k ? 1 : 0.35) : 0;
   }
@@ -894,12 +895,12 @@ function frame() {
   coreBall.scale.setScalar(1 + V.storm * 0.25 + Math.sin(t * 2) * 0.02);
   coreWire.rotation.y += dt * 0.2; coreWire.rotation.x += dt * 0.07;
   cloud.rotation.y += dt * (0.12 + V.storm * 1.2);
-  cloud.scale.setScalar(1 + V.storm * 0.5);
+  cloud.scale.setScalar(1 + V.storm * 0.2);
   orbits.forEach(o => { o.rotation.x += o.userData.spin.x * dt * (1 + V.storm * 4); o.rotation.y += o.userData.spin.y * dt * (1 + V.storm * 4); });
   CORE.position.y = CORE_POS.y + Math.sin(t * 1.1) * 0.12;
   padRing.material.opacity = 0.6 + 0.3 * Math.sin(t * 2) + V.storm;
   if (built) coreLight.intensity = 10 + V.storm * 30 + Math.sin(t * 3) * 1.5;
-  bloom.strength = 0.55 + V.storm * 0.7;
+  bloom.strength = 0.5 + V.storm * 0.35;
 
   // floor tiles flicker
   for (const tl of tiles) tl.material.opacity = Math.max(0, Math.sin(t * 0.8 + tl.userData.phase)) * 0.12 + V.storm * 0.1;
