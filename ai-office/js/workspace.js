@@ -3,7 +3,7 @@
 import { el, button, on, clip } from './util.js';
 import { S } from './state.js';
 import { callIntegration, mcpErrText } from './integrations.js';
-import { requestApproval, registerExecutor } from './approvals.js';
+import { requestApproval, registerExecutor, openApproval } from './approvals.js';
 import { openModal, fileActions } from './modal.js';
 import { AI, aiReady, identity, errText } from './ai.js';
 import { checkBudget, recordUsage } from './usage.js';
@@ -35,7 +35,7 @@ registerExecutor('slack', async a => {
 });
 
 /* ------------------------------------------------------------------ book a calendar event */
-export function askBookEvent({ agentKey, summary = '', description = '' } = {}) {
+export function askBookEvent({ agentKey, summary = '', description = '', review = false } = {}) {
   const frag = document.createDocumentFragment();
   const title = el('input'); title.id = 'cal-title'; title.maxLength = 120; title.value = summary; title.placeholder = 'مثلاً: متابعة خطة الإطلاق';
   const d = new Date(Date.now() + 86400000); d.setHours(10, 0, 0, 0);
@@ -50,10 +50,10 @@ export function askBookEvent({ agentKey, summary = '', description = '' } = {}) 
     const t = title.value.trim(); if (!t) return title.focus();
     if (!date.value || !time.value) { msg.textContent = 'اختر اليوم والساعة.'; return; }
     const start = `${date.value}T${time.value}:00`, minutes = +dur.value;
-    requestApproval({ kind: 'calendar', agentKey, title: `حجز «${clip(t, 50)}» يوم ${date.value} الساعة ${time.value}`,
+    const a = requestApproval({ kind: 'calendar', agentKey, title: `حجز «${clip(t, 50)}» يوم ${date.value} الساعة ${time.value}`,
       preview: `العنوان: ${t}\nالبداية: ${date.value} ${time.value} (${TZ})\nالمدة: ${dur.selectedOptions[0].text}\n\n${description}`,
       payload: { summary: t.slice(0, 200), description: clip(description, 4000), start, minutes } });
-    close();
+    close(); if (review) openApproval(a);
   });
   close = openModal('موعد في التقويم', frag, [go]);
 }
@@ -105,4 +105,20 @@ export async function summarizeCalendar(ag) {
     out.textContent = res.text.trim(); recordUsage(ag, prompt.length, res.text.length);
     addEvent(ag, 'راجع مواعيدك في التقويم');
   } catch (e) { out.textContent = errText(e) + '\n\n' + list.join('\n'); }
+}
+
+/** Check the calendar connection: read the next two days (no changes), then optionally book a test event. */
+export async function testCalendar() {
+  const frag = document.createDocumentFragment(); const out = el('div', 'doc', 'أقرأ تقويمك…'); frag.append(out);
+  const book = button('btn primary', 'احجز موعداً تجريبياً', () => askBookEvent({ agentKey: 'ceo', summary: 'موعد تجريبي من خلية المكتب', description: 'موعد تجريبي للتأكد أن الوكلاء يستطيعون الحجز في تقويمك. يمكنك حذفه.', review: true }));
+  book.hidden = true;
+  openModal('تجربة التقويم', frag, [book]);
+  const now = new Date(), end = new Date(now.getTime() + 2 * 86400000);
+  try {
+    const r = await callIntegration('calendar', 'GOOGLECALENDAR_EVENTS_LIST_ALL_CALENDARS', { time_min: now.toISOString(), time_max: end.toISOString(), single_events: true, response_detail: 'minimal', max_results_per_calendar: 50 });
+    const rows = r?.summary_view || r?.events || r?.items || [];
+    const list = (Array.isArray(rows) ? rows : []).slice(0, 10).map(e => `- ${String(e.start?.dateTime || e.start?.date || e.start || '').replace('T', ' ').slice(0, 16)} — ${clip(String(e.summary || e.title || 'بدون عنوان'), 80)}`);
+    out.textContent = `القراءة تعمل ✓\n\n${list.length ? `مواعيدك في اليومين القادمين:\n${list.join('\n')}` : 'لا مواعيد في اليومين القادمين.'}\n\nلتجربة الحجز أيضاً اضغط «احجز موعداً تجريبياً»: يذهب الطلب لصندوق الموافقات، ولا يُحجز إلا بعد موافقتك.`;
+    book.hidden = false;
+  } catch (e) { out.textContent = mcpErrText(e); }
 }

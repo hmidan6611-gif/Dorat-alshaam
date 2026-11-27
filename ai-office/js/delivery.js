@@ -7,6 +7,7 @@ import { requestApproval, registerExecutor, openApproval } from './approvals.js'
 import { openModal, fileActions } from './modal.js';
 import { AI, aiReady, identity, errText } from './ai.js';
 import { checkBudget, recordUsage } from './usage.js';
+import { testCalendar } from './workspace.js';
 import { addEvent } from './log.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,6 +82,8 @@ export function openServices() {
       const li = el('li'), st = integrationStatus(k);
       const chip = el('span', 'badge' + (st === 'ready' ? '' : ' idle'), LABEL[st] || st); chip.style.alignSelf = 'flex-start';
       li.append(el('b', '', i.label), el('small', '', i.about), chip);
+      const tryIt = { gmail: ['أرسل رسالة تجريبية', askTestEmail], drive: ['احفظ ملفاً تجريبياً', askTestDrive], calendar: ['جرّب التقويم', testCalendar] }[k];
+      if (tryIt && (!i.toolkit || st === 'ready')) li.append(button('btn', tryIt[0], tryIt[1]));
       if (i.toolkit && st !== 'ready') {
         const note = el('small', 'muted');
         const b = button('btn', `اربط ${i.label}`, async () => {
@@ -99,8 +102,7 @@ export function openServices() {
   };
   draw(); frag.append(ul);
   const check = button('btn primary', 'افحص الاتصال', async () => { check.disabled = true; await checkConnections(); draw(); check.disabled = false; });
-  const test = button('btn', 'أرسل رسالة تجريبية', () => askTestEmail());
-  openModal('الخدمات المربوطة', frag, [test, check]);
+  openModal('الخدمات المربوطة', frag, [check]);
 }
 export { byKey };
 
@@ -125,4 +127,13 @@ export function askTestEmail() {
     close(); openApproval(a);
   });
   close = openModal('رسالة تجريبية', frag, [go]);
+}
+
+/** A small text file saved to your Drive after your approval, to check the Drive connection. */
+export function askTestDrive() {
+  const when = new Date().toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
+  const text = `ملف تجريبي من «خلية المكتب».\nحُفظ بعد موافقتك في ${when} للتأكد أن الوكلاء يستطيعون حفظ مخرجاتهم في Google Drive.\n\nيمكنك حذف هذا الملف.`;
+  const a = requestApproval({ kind: 'drive', agentKey: 'ceo', title: 'حفظ ملف تجريبي في Google Drive',
+    preview: `اسم الملف: تجربة خلية المكتب\n\n${text}`, payload: { title: 'تجربة خلية المكتب', text } });
+  openApproval(a);
 }
