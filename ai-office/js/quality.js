@@ -3,7 +3,7 @@ import { renderer, composer, sun, onFrame, Q, resize, scene, camera } from './sc
 import { makeFloorReflection } from './reflect.js';
 import { S } from './state.js';
 import { FL } from './floors.js';
-import { isPhone, emit } from './util.js';
+import { isPhone, emit, on } from './util.js';
 
 const LEVELS = ['low', 'balanced', 'high'];
 let mode = 'auto', level = isPhone() ? 'balanced' : 'high';
@@ -17,7 +17,7 @@ function setReflections(on) {
   FL.groups.forEach((g, id) => {
     let r = reflectors.get(id);
     if (on && !r) { r = makeFloorReflection(); g.add(r); reflectors.set(id, r); }
-    if (r) r.visible = on;
+    if (r) { r.visible = on; const sz = g.userData.size || 16, c = g.userData.center || 0; r.scale.set(sz / 16, sz / 16, 1); r.position.x = c; r.position.z = c; }
   });
 }
 function apply(l) {
@@ -53,6 +53,7 @@ export function initQuality() {
   });
   // new floors get reflections too
   addEventListener('deskhive-floor-added', () => setReflections(level === 'high'));
+  on('floor-resized', () => setReflections(level === 'high'));
   onFrame(() => {
     if (level !== 'high') return;
     const g = FL.groups.get(S.viewFloor), r = reflectors.get(S.viewFloor);

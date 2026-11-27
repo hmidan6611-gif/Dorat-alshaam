@@ -1,5 +1,6 @@
 // Real work: the Kanban board, assigning tasks (drag onto a robot), Claude doing the work,
 // hand-offs between agents, review and approval.
+import { teamView, renderTeamBoard, initTeamBoard } from './teamboard.js';
 import { $, el, button, uid, wait, clip, emit, on, gsap, D } from './util.js';
 import { S, byKey, isFemale } from './state.js';
 import { STATUS } from './data.js';
@@ -258,9 +259,9 @@ export function openNewTask(presetKey = '') {
     const keys = x.chain.filter(byKey); who.value = keys[0] || ''; h1.value = keys[1] || ''; h2.value = keys[2] || '';
   })));
   const after = el('select'); after.id = 'task-after';
-  [['', 'لا شيء'], ['email', 'أرسل الناتج بالبريد'], ['drive', 'احفظ الناتج في Google Drive']].forEach(([v, l]) => after.append(new Option(l, v)));
+  [['', 'لا شيء'], ['email', 'أرسل الناتج بالبريد'], ['drive', 'احفظ الناتج في Google Drive'], ['slack', 'أرسل الناتج إلى قناة Slack']].forEach(([v, l]) => after.append(new Option(l, v)));
   const afterTo = el('input'); afterTo.type = 'email'; afterTo.dir = 'ltr'; afterTo.id = 'task-after-to'; afterTo.placeholder = 'name@example.com'; afterTo.hidden = true;
-  after.onchange = () => { afterTo.hidden = after.value !== 'email'; };
+  after.onchange = () => { afterTo.hidden = !['email', 'slack'].includes(after.value); afterTo.type = after.value === 'slack' ? 'text' : 'email'; afterTo.placeholder = after.value === 'slack' ? 'اسم القناة، مثل general' : 'name@example.com'; };
   const chk = el('label', 'check'); chk.append(appr, document.createTextNode('تحتاج موافقتي قبل أن تُعتبر منجزة'));
   frag.append(el('h3', '', 'أمثلة'), ex, field('عنوان المهمة', title), field('التفاصيل', desc), field('المسؤول', who),
     field('ثم يسلّمها إلى (اختياري)', h1), field('ثم إلى (اختياري)', h2), field('بعد الإنجاز (ينتظر موافقتك)', after), afterTo, chk);
@@ -295,6 +296,7 @@ function openTask(t) {
 const STATUS_TEXT = t => t.error ? t.error : t.paused ? 'متوقفة' : t.status === 'todo' && t.chain.length ? `بانتظار ${nameOf(currentKey(t))}` : '';
 export function renderBoard() {
   const cols = $('cols'); if (!cols) return;
+  if (teamView()) { renderTeamBoard(cols); return; }
   const scroll = [...cols.children].map(c => c.scrollTop);
   cols.replaceChildren();
   const q = ($('board-q')?.value || '').trim().toLowerCase(), who = $('board-agent')?.value || '';
@@ -398,6 +400,7 @@ export function restoreTasks() {
   renderBoard();
 }
 export function initBoard() {
+  initTeamBoard(renderBoard);
   $('task-new').onclick = () => openNewTask();
   $('board-q').addEventListener('input', renderBoard); $('board-agent').addEventListener('change', renderBoard);
   renderBoard();

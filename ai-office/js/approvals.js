@@ -12,6 +12,8 @@ export const KINDS = {
   email: { label: 'إرسال بريد', color: '#4d7cff' },
   drive: { label: 'حفظ في Google Drive', color: '#2fe08a' },
   call: { label: 'مكالمة هاتفية', color: '#ff8a3d' },
+  calendar: { label: 'موعد في التقويم', color: '#22d3ee' },
+  slack: { label: 'رسالة Slack', color: '#e879f9' },
   publish: { label: 'نشر', color: '#b06bff' },
   payment: { label: 'دفع', color: '#ff5c8a' },
 };

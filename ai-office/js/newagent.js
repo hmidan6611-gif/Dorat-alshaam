@@ -5,7 +5,7 @@ import { NEW_COLORS } from './data.js';
 import { put } from './store.js';
 import { AI, aiReady, noteFatal } from './ai.js';
 import { makeAgent } from './agents.js';
-import { floorById, mainFloor, objAt, findOfficeSpot, drawObj, saveFloor } from './floors.js';
+import { floorById, mainFloor, objAt, findOfficeSpot, drawObj, saveFloor, expandFloor } from './floors.js';
 import { footprint } from './layout.js';
 import { rebuildNav } from './nav.js';
 import { addEvent } from './log.js';
@@ -56,7 +56,7 @@ export function openNew() {
   const c = NEW_COLORS.find(x => !used.has(x)) || NEW_COLORS[0];
   document.querySelector(`input[name="new-color"][value="${c}"]`).checked = true; $('new-ava').style.setProperty('--c', c);
   const fs = $('new-floor'); fs.replaceChildren();
-  S.floors.forEach(f => fs.append(new Option(`${f.name}${hasRoom(f) ? '' : ' (ممتلئ)'}`, f.id)));
+  S.floors.forEach(f => fs.append(new Option(`${f.name}${hasRoom(f) ? '' : f.size === 20 ? ' (ممتلئ)' : ' (سيتوسّع)'}`, f.id)));
   fs.value = S.viewFloor;
   ui.focusLounge();
   setTimeout(() => $('new-name').focus(), 400);
@@ -93,6 +93,7 @@ export function initNewAgent(hooks) {
     const name = $('new-name').value.trim(), role = $('new-role').value.trim(), desc = $('new-desc').value.trim();
     if (!name || !role) return;
     const floor = floorById($('new-floor').value) || mainFloor();
+    if (!hasRoom(floor) && floor.size !== 20) expandFloor(floor);
     if (!hasRoom(floor)) { $('new-status').textContent = `لا توجد مساحة لمكتب جديد في «${floor.name}». اختر طابقاً آخر أو أضف طابقاً.`; return; }
     const gender = val('new-gender'), color = val('new-color'), personality = $('new-personality').value, voice = $('new-voice').value;
     const shape = { head: val('new-headshape'), antenna: val('new-antenna'), acc: val('new-accessory') };

@@ -1,16 +1,16 @@
 // Walking grid per floor: walls and furniture block cells, A* finds a path, and the path is straightened.
-import { obstacles } from './layout.js';
+import { obstacles, roomMax } from './layout.js';
 
-const CELL = 0.15, MIN = -8, N = Math.round(16 / CELL), EDGE = 7.75;
+const CELL = 0.15, MIN = -8, N = Math.round(20 / CELL), EDGE = 7.75;
 const grids = new Map(); // floorId -> Uint8Array (1 = blocked)
 const toCell = v => Math.max(0, Math.min(N - 1, Math.floor((v - MIN) / CELL)));
 const center = i => MIN + (i + 0.5) * CELL;
 
 export function rebuildNav(floor) {
-  const g = new Uint8Array(N * N);
+  const g = new Uint8Array(N * N), hi = roomMax(floor) - 0.25;
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const x = center(i), z = center(j);
-    if (x < -EDGE || x > EDGE || z < -EDGE || z > EDGE) g[j * N + i] = 1;
+    if (x < -EDGE || x > hi || z < -EDGE || z > hi) g[j * N + i] = 1;
   }
   for (const o of floor.objects) for (const r of obstacles(o)) {
     const i1 = toCell(r.x1 - r.pad), i2 = toCell(r.x2 + r.pad), j1 = toCell(r.z1 - r.pad), j2 = toCell(r.z2 + r.pad);

@@ -13,6 +13,7 @@ import { openCallSetup } from './phone.js';
 import { growthCard, renderMemory } from './growth.js';
 import { usageCard } from './usage.js';
 import { summarizeInbox } from './delivery.js';
+import { summarizeCalendar } from './workspace.js';
 import { focusOn } from './scene.js';
 
 let tab = 'overview';
@@ -83,7 +84,7 @@ function renderOverview(ag) {
 
   box.append(el('p', 'lead', a.intro));
   const tools = el('div', 'row');
-  tools.append(button('btn', 'مكالمة هاتفية', () => openCallSetup(ag)), button('btn', 'لخّص بريدي', () => summarizeInbox(ag)));
+  tools.append(button('btn', 'مكالمة هاتفية', () => openCallSetup(ag)), button('btn', 'لخّص بريدي', () => summarizeInbox(ag)), button('btn', 'مواعيدي', () => summarizeCalendar(ag)));
   tools.append(button('btn', isFemale(a) ? 'اقرأ شاشتها' : 'اقرأ شاشته', () => { showHolo(ag); focusOn(holoPos(ag), 2.6); }));
   box.append(tools);
   if (a.ceo) {

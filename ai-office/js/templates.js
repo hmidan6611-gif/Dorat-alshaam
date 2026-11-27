@@ -3,7 +3,7 @@ import { el, button } from './util.js';
 import { S } from './state.js';
 import { openModal } from './modal.js';
 import { installAgent, hasRoom } from './newagent.js';
-import { floorById } from './floors.js';
+import { floorById, expandFloor } from './floors.js';
 import { addFloor } from './floorsui.js';
 import { canAddAgent, openPlans } from './plans.js';
 
@@ -40,8 +40,11 @@ export function openStore() {
       // the floor you are looking at first, then any other floor with space
       let floor = [floorById(S.viewFloor), ...S.floors].find(f => f && hasRoom(f));
       if (!floor) {
-        if (!b.dataset.grow) { b.dataset.grow = '1'; b.textContent = 'كل الطوابق ممتلئة: اضغط لإضافة طابق وتركيبه'; return; }
-        floor = addFloor({ name: `فريق ${S.floors.length + 1}`, color: tp.color });
+        // first grow a floor that can still grow, then add a new floor
+        const small = [floorById(S.viewFloor), ...S.floors].find(f => f && f.size !== 20);
+        if (!b.dataset.grow) { b.dataset.grow = '1'; b.textContent = small ? `«${small.name}» ممتلئ: اضغط لتوسعته وتركيب الوكيل` : 'كل الطوابق ممتلئة: اضغط لإضافة طابق وتركيبه'; return; }
+        if (small) { expandFloor(small); if (hasRoom(small)) floor = small; }
+        if (!floor) floor = addFloor({ name: `فريق ${S.floors.length + 1}`, color: tp.color });
       }
       const a = { key: 'c' + Date.now().toString(36), name: tp.name, role: tp.role, desc: tp.desc, gender: tp.gender, color: tp.color, voice: tp.voice,
         personality: tp.personality, shape: tp.shape, tasks: tp.tasks, chips: Object.fromEntries(tp.questions.map(q => [q, ''])),

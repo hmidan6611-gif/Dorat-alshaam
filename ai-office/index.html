@@ -118,7 +118,10 @@
   <div class="bfilter">
     <input class="search" id="board-q" type="search" placeholder="ابحث في المهام" aria-label="بحث في المهام">
     <select id="board-agent" aria-label="فلترة حسب الوكيل"><option value="">كل الوكلاء</option></select>
+    <select id="board-scope" aria-label="أي لوحة" hidden><option value="mine">مهامي</option><option value="team">لوحة الفريق</option></select>
+    <button class="btn" id="team-share" type="button" aria-pressed="false" hidden>شارك لوحتي مع الفريق</button>
   </div>
+  <p class="team-note" id="team-note" hidden></p>
   <div class="cols" id="cols"></div>
 </section>
 

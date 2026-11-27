@@ -18,6 +18,9 @@ export const lampMats = []; // desk-lamp bulbs, brightened at night by the day c
 
 /* ------------------------------------------------------------------ catalog */
 // rect = [x1, z1, x2, z2] in object-local units; spots = [x, z, lookX, lookZ, sit]
+/** A floor's room runs from -8 to roomMax on both axes (16 m, or 20 m once expanded toward the open sides). */
+export const roomMax = f => -8 + (f?.size === 20 ? 20 : 16);
+export const roomCenter = f => (roomMax(f) - 8) / 2;
 export const CATALOG = {
   office: { label: 'مكتب', w: 3.6, d: 3.5 },
   plant: { label: 'نبتة', w: 1.0, d: 1.0, rects: [[-0.45, -0.45, 0.45, 0.45]], spots: [[0, 0.85, 0, 0]], kind: 'plant', m: 'يسقي النبتة', f: 'تسقي النبتة', gain: 2, drink: true },

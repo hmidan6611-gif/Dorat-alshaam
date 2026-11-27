@@ -1,6 +1,6 @@
 // Dashboard: productivity per agent, finished tasks over the last 7 days, time spent, and recent activity.
 // Charts are plain SVG: one series each, so one hue; identity comes from the agent's name and swatch.
-import { $, el, button, fmtTime, clip, on } from './util.js';
+import { $, el, button, fmtTime, clip, on, isPhone } from './util.js';
 import { S, byKey } from './state.js';
 import { moodOf } from './agents.js';
 import { floorById } from './floors.js';
@@ -9,6 +9,8 @@ const HUE = '#7b96ff';          // validated against the dark panel surface
 const NS = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs = {}) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
 const fmtDur = ms => { const m = Math.round(ms / 60000); if (m < 1) return `${Math.max(1, Math.round(ms / 1000))} ث`; if (m < 60) return `${m} د`; return `${Math.floor(m / 60)} س ${m % 60} د`; };
+// on a phone the charts are drawn at the card's real width, so text stays its true size instead of shrinking
+const chartW = () => (isPhone() ? Math.max(300, Math.min(420, innerWidth - 62)) : 520);
 const nf = n => n.toLocaleString('ar');
 
 /** Per-agent numbers from the tasks, files and chats. */
@@ -39,7 +41,7 @@ const hideTip = () => { tip.hidden = true; };
 function barChart(stats) {
   const rows = [...stats].sort((a, b) => b.steps - a.steps);
   const max = Math.max(1, ...rows.map(r => r.steps));
-  const W = 520, rowH = 30, labelW = 120, H = rows.length * rowH + 24;
+  const W = chartW(), rowH = isPhone() ? 36 : 30, labelW = isPhone() ? 100 : 120, H = rows.length * rowH + 24;
   const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'خطوات العمل المنجزة لكل وكيل' });
   const plotW = W - labelW - 50;
   const ticks = [...new Set([0, Math.ceil(max / 2), max])];
@@ -55,7 +57,7 @@ function barChart(stats) {
     if (len > 0) s.append(svg('path', { d: `M${x0} ${y + 3} h${-Math.max(0, len - 4)} a4 4 0 0 0 -4 4 v10 a4 4 0 0 0 4 4 h${Math.max(0, len - 4)} z`, fill: HUE }));
     const v = svg('text', { x: x0 - len - 6, y: y + 15, class: 'val', 'text-anchor': 'end' }); v.textContent = nf(r.steps); s.append(v);
     const hit = svg('rect', { x: 0, y, width: W, height: rowH, fill: 'transparent' });
-    hit.addEventListener('pointermove', e => showTip(e.clientX, e.clientY, [r.ag.a.name, `خطوات منجزة: ${nf(r.steps)}`, `وقت العمل: ${fmtDur(r.workMs)}`, `ملفات: ${nf(r.files)}`]));
+    ['pointermove', 'pointerdown'].forEach(ev => hit.addEventListener(ev, e => showTip(e.clientX, e.clientY, [r.ag.a.name, `خطوات منجزة: ${nf(r.steps)}`, `وقت العمل: ${fmtDur(r.workMs)}`, `ملفات: ${nf(r.files)}`])));
     hit.addEventListener('pointerleave', hideTip);
     s.append(hit);
   });
@@ -67,7 +69,7 @@ function lineChart() {
   const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (6 - i)); return d; });
   const counts = days.map(d => S.tasks.filter(t => t.status === 'done' && t.doneAt >= +d && t.doneAt < +d + 864e5).length);
   const max = Math.max(2, ...counts);
-  const W = 520, H = 190, L = 30, R = 30, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+  const W = chartW(), H = isPhone() ? 210 : 190, L = 30, R = 30, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
   const X = i => W - R - (i / 6) * pw, Y = v => T + ph - (v / max) * ph; // RTL: today on the left
   const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'المهام المنجزة يومياً خلال 7 أيام' });
   [0, Math.round(max / 2), max].forEach(v => {
@@ -83,13 +85,14 @@ function lineChart() {
   const cross = svg('line', { y1: T, y2: T + ph, class: 'cross', visibility: 'hidden' }); s.append(cross);
   const dot = svg('circle', { r: 5, fill: HUE, stroke: 'var(--panel-solid)', 'stroke-width': 2, visibility: 'hidden' }); s.append(dot);
   const hit = svg('rect', { x: L, y: T, width: pw, height: ph, fill: 'transparent' });
-  hit.addEventListener('pointermove', e => {
+  const track = e => {
     const r = s.getBoundingClientRect(), x = (e.clientX - r.left) * (W / r.width);
     const i = Math.max(0, Math.min(6, Math.round((W - R - x) / pw * 6)));
     cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
     dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(counts[i])); dot.setAttribute('visibility', 'visible');
     showTip(e.clientX, e.clientY, [days[i].toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' }), `مهام منجزة: ${nf(counts[i])}`]);
-  });
+  };
+  hit.addEventListener('pointermove', track); hit.addEventListener('pointerdown', track);
   hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); hideTip(); });
   s.append(hit);
   return s;
@@ -139,6 +142,8 @@ export function openDashboard(open) { $('dash').hidden = !open; if (open) render
 export function initDashboard({ onClose }) {
   tip = $('dash-tip');
   $('dash-close').onclick = onClose;
+  let lastW = innerWidth;
+  addEventListener('resize', () => { if (!$('dash').hidden && Math.abs(innerWidth - lastW) > 40) { lastW = innerWidth; renderDashboard(); } });
   ['tasks-changed', 'files-changed', 'events-changed', 'stats'].forEach(n => on(n, () => { clearTimeout(initDashboard.t); initDashboard.t = setTimeout(renderDashboard, 300); }));
 }
 export { button };

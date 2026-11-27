@@ -9,6 +9,7 @@ import { sendPulse, boost, stormEvent } from './scene.js';
 import { addLog } from './log.js';
 import { speakLines, stopVoice, canSpeak, isAutoRead } from './voice.js';
 import { createTask } from './tasks.js';
+import { askBookEvent, askPostSlack } from './workspace.js';
 
 const meeting = S.meeting;
 const mp = () => $('meet-pane');
@@ -77,7 +78,10 @@ function renderMeetResult(m, fresh) {
   m.lines.forEach(l => box.append(lineEl(l.name, agentInfo(l.key)?.color || '#94a3b8', l.text)));
   box.append(planEl(m));
   const row = el('div', 'row');
-  row.append(button('btn primary', fresh ? 'اجتماع جديد' : 'رجوع', renderMeetHome), toTasksButton(m), listenButton(m));
+  const planText = `${m.summary || ''}\n\n${(m.plan || []).map((p, k) => `${k + 1}. ${p.step}${agentInfo(p.owner) ? ` — ${agentInfo(p.owner).name}` : ''}`).join('\n')}`.trim();
+  row.append(button('btn primary', fresh ? 'اجتماع جديد' : 'رجوع', renderMeetHome), toTasksButton(m), listenButton(m),
+    button('btn', 'موعد متابعة', () => askBookEvent({ agentKey: 'ceo', summary: `متابعة: ${clip(m.topic, 80)}`, description: planText })),
+    button('btn', 'شارك في Slack', () => askPostSlack({ agentKey: 'ceo', text: `*اجتماع الفريق: ${m.topic}*\n\n${planText}`, title: `خطة «${clip(m.topic, 30)}»` })));
   box.append(row);
   if (!fresh) box.scrollTop = 0;
 }

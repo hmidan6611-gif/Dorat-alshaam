@@ -3,8 +3,8 @@
 import { $, el, button, uid, emit } from './util.js';
 import { S, byKey } from './state.js';
 import { THREE, camera, renderer, controls, world, setCorePos } from './scene.js';
-import { FL, floorById, drawObj, undrawObj, saveFloor, elevatorOf } from './floors.js';
-import { CATALOG, PLACEABLE, footprint, officeSeat } from './layout.js';
+import { FL, floorById, drawObj, undrawObj, saveFloor, elevatorOf, expandFloor } from './floors.js';
+import { CATALOG, PLACEABLE, footprint, officeSeat, roomMax } from './layout.js';
 import { rebuildNav, findPath } from './nav.js';
 import { bindOffice, rebuildBeam, atDesk, walkTo } from './agents.js';
 
@@ -16,7 +16,8 @@ const snap = v => Math.round(v * 4) / 4;
 function setHint(text, bad = false) { const h = $('edit-hint'); h.textContent = text; h.style.color = bad ? '#ffb4b6' : ''; }
 function overlaps(floor, o) {
   const f = footprint(o);
-  if (f.x1 < -7.85 || f.x2 > 7.85 || f.z1 < -7.85 || f.z2 > 7.85) return true;
+  const hi = roomMax(floor) - 0.15;
+  if (f.x1 < -7.85 || f.x2 > hi || f.z1 < -7.85 || f.z2 > hi) return true;
   return floor.objects.some(x => x !== o && x.id !== o.id && (() => { const p = footprint(x); return p.x1 < f.x2 - 0.05 && p.x2 > f.x1 + 0.05 && p.z1 < f.z2 - 0.05 && p.z2 > f.z1 + 0.05; })());
 }
 /** Every office must still reach the elevator. */
@@ -141,6 +142,10 @@ export function setEditing(on) {
     ui.select(null); ui.showPanel(null);
     const pal = $('edit-palette'); pal.replaceChildren();
     PLACEABLE.forEach(t => pal.append(button('btn', '+ ' + CATALOG[t].label, () => add(t))));
+    if (floorNow()?.size !== 20) {
+      const grow = button('btn', '⤢ وسّع الطابق', () => { if (expandFloor(floorNow())) { grow.remove(); ui.focusRoom?.(1); setHint('صار الطابق أوسع: مساحة جديدة لمكاتب وأثاث نحو الأمام.'); } });
+      pal.append(grow);
+    }
     select(null);
   } else { select(null); controls.enabled = true; }
 }

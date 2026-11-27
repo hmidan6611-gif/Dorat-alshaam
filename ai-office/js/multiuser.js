@@ -3,9 +3,9 @@
 // who they talk to); each person's tasks and chats stay private to them.
 import { THREE, onFrame, camera, renderer, glow, mesh, std } from './scene.js';
 import { S, byKey } from './state.js';
-import { FL } from './floors.js';
+import { FL, floorById } from './floors.js';
 import { findPath } from './nav.js';
-import { officeDoorOut } from './layout.js';
+import { officeDoorOut, roomMax } from './layout.js';
 import { $, el, button, on, isPhone } from './util.js';
 import { openModal } from './modal.js';
 
@@ -126,7 +126,8 @@ export async function initMultiuser() {
     setTimeout(() => {
       if (S.focused) return; // the click opened an agent
       ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
-      if (ray.ray.intersectPlane(plane, hit) && Math.abs(hit.x) < 7.7 && Math.abs(hit.z) < 7.7) walkMine(hit.x, hit.z);
+      const hi = roomMax(floorById(S.viewFloor)) - 0.3;
+      if (ray.ray.intersectPlane(plane, hit) && hit.x > -7.7 && hit.z > -7.7 && hit.x < hi && hit.z < hi) walkMine(hit.x, hit.z);
     }, 60);
   });
 }

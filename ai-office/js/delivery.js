@@ -2,7 +2,7 @@
 // Sending and saving always go through the approvals box first; reading the inbox only happens when you click.
 import { el, button, on, clip } from './util.js';
 import { S, byKey } from './state.js';
-import { INTEGRATIONS, integrationStatus, checkConnections, callIntegration, mcpErrText } from './integrations.js';
+import { INTEGRATIONS, integrationStatus, checkConnections, callIntegration, mcpErrText, composioConnect } from './integrations.js';
 import { requestApproval, registerExecutor } from './approvals.js';
 import { openModal, fileActions } from './modal.js';
 import { AI, aiReady, identity, errText } from './ai.js';
@@ -80,7 +80,21 @@ export function openServices() {
     Object.entries(INTEGRATIONS).forEach(([k, i]) => {
       const li = el('li'), st = integrationStatus(k);
       const chip = el('span', 'badge' + (st === 'ready' ? '' : ' idle'), LABEL[st] || st); chip.style.alignSelf = 'flex-start';
-      li.append(el('b', '', i.label), el('small', '', i.about), chip); ul.append(li);
+      li.append(el('b', '', i.label), el('small', '', i.about), chip);
+      if (i.toolkit && st !== 'ready') {
+        const note = el('small', 'muted');
+        const b = button('btn', `اربط ${i.label}`, async () => {
+          b.disabled = true; note.textContent = 'أجهّز رابط الربط…';
+          try {
+            const url = await composioConnect(k);
+            if (!url) { note.textContent = 'لم يصل رابط. تأكد أن موصل Composio مضاف في claude.ai.'; b.disabled = false; return; }
+            note.replaceChildren(document.createTextNode('افتح هذا الرابط وسجّل الدخول، ثم ارجع واضغط «افحص الاتصال»: '));
+            const a = el('a', '', 'رابط الربط'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; note.append(a);
+          } catch (e) { note.textContent = mcpErrText(e); b.disabled = false; }
+        });
+        li.append(b, note);
+      }
+      ul.append(li);
     });
   };
   draw(); frag.append(ul);

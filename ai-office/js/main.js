@@ -4,7 +4,8 @@ import { S, V, byKey } from './state.js';
 import { BUILTIN, CEO } from './data.js';
 import { THREE, renderer, camera, coreBall, corePos, focusOn, runBuild, startLoop, ring3d, boost, sendPulse, shown } from './scene.js';
 import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble, saveAgentState } from './agents.js';
-import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL } from './floors.js';
+import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL, expandFloor } from './floors.js';
+import { roomCenter } from './layout.js';
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { initApprovals, restoreApprovals } from './approvals.js';
 import { initReplay, restoreReplay } from './replay.js';
@@ -12,6 +13,7 @@ import { initGrowth, restoreMemory, restoreXp } from './growth.js';
 import { initReception } from './reception.js';
 import { restoreUsage } from './usage.js';
 import { openServices } from './delivery.js';
+import './workspace.js';
 import { initMultiuser, openInvite } from './multiuser.js';
 import { openStore } from './templates.js';
 import { openPlans, restorePlan } from './plans.js';
@@ -54,10 +56,15 @@ function setTabState(name) {
   ['office', 'tasks', 'meet', 'dash'].forEach(t => $('tab-' + t)?.setAttribute('aria-selected', String(t === name)));
   openDashboard(name === 'dash');
 }
+/** Frame the whole viewed floor (an expanded 20 m floor is framed a little wider). */
+export function focusRoom(zoom = 1) {
+  const f = floorById(S.viewFloor), c = roomCenter(f);
+  focusOn(new THREE.Vector3(c, 0.5, c), f?.size === 20 ? zoom * 0.8 : zoom);
+}
 export function viewFloor(id) {
   if (S.viewFloor === id) return;
   setView(id); renderFloorsUI(); renderTeam();
-  focusOn(new THREE.Vector3(0, 0.5, 0), 1);
+  focusRoom(1);
 }
 function select(ag) {
   if (ag && S.meeting.running) return;
@@ -71,7 +78,7 @@ function select(ag) {
     showPanel('chat'); openAgentPanel(ag);
     ring3d(ag.parts.ring, ag.a.color, 2.6, 1, 0.4); boost(ag, 1, 1.2);
   } else {
-    focusOn(new THREE.Vector3(0, 0.5, 0), 1);
+    focusRoom(1);
     if (S.panel === 'chat') showPanel(null);
   }
   refreshTeam();
@@ -82,7 +89,7 @@ function setTab(name) {
   setTabState(name);
   if (name === 'office') { select(null); showPanel(null); }
   if (name === 'dash') { select(null); showPanel(null); }
-  if (name === 'tasks') { select(null); showPanel('board'); focusOn(new THREE.Vector3(0, 0.5, 0), isPhone() ? 0.9 : 0.95); }
+  if (name === 'tasks') { select(null); showPanel('board'); focusRoom(isPhone() ? 0.9 : 0.95); }
   if (name === 'meet') {
     select(null); if (S.viewFloor !== 'main') viewFloor('main');
     showPanel('meet'); if (!S.meeting.running) renderMeetHome(); focusOn(new THREE.Vector3(0.8, 0.5, 2), isPhone() ? 0.95 : 1);
@@ -223,6 +230,7 @@ async function restore() {
       const main = S.floors[0];
       main.objects.forEach(o => undrawObj(o.id));
       main.objects = f.objects; main.name = f.name || main.name;
+      if (f.size === 20) expandFloor(main, false);
       main.objects.forEach(o => drawObj(main, o));
       rebuildNav(main);
       // layouts saved before the reception desk existed get one in free space
@@ -238,7 +246,7 @@ async function restore() {
       }
       S.agents.forEach(ag => { if (!main.objects.some(o => o.id === ag.a.officeId)) { const o = main.objects.find(x => x.agentKey === ag.a.key); if (o) ag.a.officeId = o.id; } bindOffice(ag); });
     } else if (!floorById(f.id)) {
-      const fl = { id: f.id, name: f.name || 'طابق', dept: f.dept || '', color: f.color || '#3d6bff', order: f.order || S.floors.length, objects: f.objects };
+      const fl = { id: f.id, name: f.name || 'طابق', dept: f.dept || '', color: f.color || '#3d6bff', order: f.order || S.floors.length, size: f.size === 20 ? 20 : 16, objects: f.objects };
       S.floors.push(fl); buildFloor(fl); dispatchEvent(new Event('deskhive-floor-added'));
     }
   }
@@ -286,7 +294,7 @@ on('show-goals', () => setTab('tasks'));
 initMeeting({ setTab, setTabState });
 initNewAgent({ select, setTabState, showPanel, viewFloor, focusLounge: () => focusOn(new THREE.Vector3(3, 0.5, 0), isPhone() ? 0.95 : 1) });
 initFloorsUI({ viewFloor, select, renderTeam });
-initEditor({ select, showPanel });
+initEditor({ select, showPanel, focusRoom });
 initDashboard({ onClose: () => setTab('office') });
 initManager({ pickAgent });
 initQuality();
@@ -298,4 +306,4 @@ setTimeout(taskTick, 3500);
 startLoop();
 export { select, showPanel, setTab, renderTeam, hasRoom, FL };
 // ?debug exposes state for automated checks
-if (new URLSearchParams(location.search).has('debug')) import('./nav.js').then(nav => import('./floors.js').then(fl => import('./layout.js').then(ly => { window.__office = { S, camera, THREE, emit, nav, fl, ly }; })));
+if (new URLSearchParams(location.search).has('debug')) import('./nav.js').then(nav => import('./floors.js').then(fl => import('./layout.js').then(ly => { window.__office = { S, camera, THREE, emit, nav, fl, ly, select }; import('./approvals.js').then(ap => { window.__office.decide = ap.decide; }); import('./workspace.js').then(ws => { window.__office.askPostSlack = ws.askPostSlack; }); })));

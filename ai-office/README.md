@@ -23,7 +23,7 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/tasks.js` | Kanban board, drag and drop, Claude doing the work, kickoff meetings, hand-offs, approvals |
 | `js/goals.js` | The CEO: plans a goal into tasks with Claude, hands them out door to door, follows progress, writes the final report |
 | `js/holo.js` | Live holographic screens above desks that show the work as it is written |
-| `js/integrations.js` | Outside services through the viewer's claude.ai connectors (Gmail, Drive, Bland); no keys in the page |
+| `js/integrations.js` | Outside services through the viewer's claude.ai connectors (Gmail, Drive, Bland, and Calendar/Slack via Composio); no keys in the page |
 | `js/approvals.js` | Approvals box: sensitive actions run only after the user approves |
 | `js/phone.js` | Phone calls through Bland: the agent writes the call script, the call waits for approval |
 | `js/replay.js` | Records poses, speech and events; timeline playback at 1x/2x/4x |
@@ -32,6 +32,8 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/reception.js` | Reception desk: approvals counter in the office, click to open the approvals box |
 | `js/usage.js` | Per-agent daily budgets for Claude requests with warnings and a hard stop |
 | `js/multiuser.js` | Colleagues as live avatars (presence only), invite instructions |
+| `js/workspace.js` | Google Calendar (read on click, book after approval) and Slack posts (after approval) |
+| `js/teamboard.js` | Optional shared team board: task titles and progress only, off by default, each person writes only their own entry |
 | `js/templates.js` | Agent store: ready-made agents installed with one click |
 | `js/plans.js` | Subscription plans by number of agents (no real payment) |
 | `js/panel.js` | Agent side panel: overview, chat, work log, files |
