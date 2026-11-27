@@ -23,7 +23,7 @@ export const goalProgress = g => { const ts = goalTasks(g); return ts.length ? t
 /* ------------------------------------------------------------------ planning */
 function planPrompt(g, boss) {
   const team = S.agents.filter(o => o !== boss).map(o => `- key: ${o.a.key} | ${o.a.name} | ${o.a.role}${o.a.desc ? ' | ' + o.a.desc : ''}`).join('\n');
-  return `${identity(boss)}
+  return `${identity(boss, g.text)}
 
 أعطاك المستخدم هدفاً كبيراً. خطّط لتنفيذه بفريقك:
 «${g.text}»

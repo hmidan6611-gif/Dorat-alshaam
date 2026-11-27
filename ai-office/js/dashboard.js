@@ -4,6 +4,8 @@ import { $, el, button, fmtTime, clip, on, isPhone } from './util.js';
 import { S, byKey } from './state.js';
 import { moodOf } from './agents.js';
 import { floorById } from './floors.js';
+import { ratingOf } from './rating.js';
+import { isOverdue } from './projects.js';
 
 const HUE = '#7b96ff';          // validated against the dark panel surface
 const NS = 'http://www.w3.org/2000/svg';
@@ -110,7 +112,7 @@ export function renderDashboard() {
 
   const tiles = el('div', 'tiles');
   tiles.append(tile('مهام منجزة', nf(by('done')), `${nf(by('review'))} بانتظار موافقتك`), tile('قيد التنفيذ', nf(by('doing')), `${nf(by('todo'))} في القائمة`),
-    tile('ملفات منتجة', nf(S.files.length)), tile('متوسط وقت الخطوة', allSteps ? fmtDur(allMs / allSteps) : '—', `${nf(allSteps)} خطوة عمل`));
+    tile('ملفات منتجة', nf(S.files.length)), (() => { const rs = S.tasks.filter(t => t.rating); return tile('متوسط تقييمك', rs.length ? (rs.reduce((a, t) => a + t.rating.stars, 0) / rs.length).toLocaleString('ar', { maximumFractionDigits: 1 }) + ' / 5' : '—', `${nf(rs.length)} تقييم · ${nf(S.tasks.filter(isOverdue).length)} متأخرة`); })(), tile('متوسط وقت الخطوة', allSteps ? fmtDur(allMs / allSteps) : '—', `${nf(allSteps)} خطوة عمل`));
   box.append(tiles);
 
   const grid = el('div', 'dgrid');
@@ -120,13 +122,13 @@ export function renderDashboard() {
 
   // table view: every number, including the ones the charts don't show
   const wrap = el('div', 'tablewrap'); const tbl = el('table', 'dtable');
-  const head = el('tr'); ['الوكيل', 'الطابق', 'خطوات', 'مهام أنهاها', 'ملفات', 'كلمات', 'وقت العمل', 'متوسط الخطوة', 'طلبات تعديل', 'محادثات', 'الطاقة', 'المزاج'].forEach(h => head.append(el('th', '', h)));
+  const head = el('tr'); ['الوكيل', 'الطابق', 'خطوات', 'مهام أنهاها', 'ملفات', 'كلمات', 'وقت العمل', 'متوسط الخطوة', 'طلبات تعديل', 'التقييم', 'محادثات', 'الطاقة', 'المزاج'].forEach(h => head.append(el('th', '', h)));
   const thead = el('thead'); thead.append(head); tbl.append(thead);
   const tb = el('tbody');
   st.forEach(r => {
     const tr = el('tr'); const name = el('td'); const sw = el('i', 'sw'); sw.style.background = r.ag.a.color; name.append(sw, document.createTextNode(r.ag.a.name));
     tr.append(name, el('td', '', floorById(r.ag.a.floorId)?.name || ''), el('td', 'num', nf(r.steps)), el('td', 'num', nf(r.done)), el('td', 'num', nf(r.files)), el('td', 'num', nf(r.words)),
-      el('td', 'num', r.workMs ? fmtDur(r.workMs) : '—'), el('td', 'num', r.avgMs ? fmtDur(r.avgMs) : '—'), el('td', 'num', nf(r.revisions)), el('td', 'num', nf(r.chats)),
+      el('td', 'num', r.workMs ? fmtDur(r.workMs) : '—'), el('td', 'num', r.avgMs ? fmtDur(r.avgMs) : '—'), el('td', 'num', nf(r.revisions)), el('td', 'num', (rt => rt ? `${rt.avg.toLocaleString('ar', { maximumFractionDigits: 1 })} ★ (${nf(rt.count)})` : '—')(ratingOf(r.ag.a.key))), el('td', 'num', nf(r.chats)),
       el('td', 'num', Math.round(r.ag.energy) + '%'), el('td', '', moodOf(r.ag).label));
     tb.append(tr);
   });

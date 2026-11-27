@@ -8,6 +8,7 @@ import { renderChat, stopChat } from './chat.js';
 import { openFile } from './modal.js';
 import { openNewTask, currentKey } from './tasks.js';
 import { openNewGoal, openGoal, goalProgress } from './goals.js';
+import { openBrief } from './brief.js';
 import { holoPos, showHolo } from './holo.js';
 import { openCallSetup } from './phone.js';
 import { growthCard, renderMemory } from './growth.js';
@@ -89,7 +90,7 @@ function renderOverview(ag) {
   box.append(tools);
   if (a.ceo) {
     const hd = el('div', 'row'); hd.style.alignItems = 'center';
-    hd.append(el('h3', '', 'الأهداف'), button('btn gold', 'هدف جديد', openNewGoal)); hd.firstChild.style.flex = '1';
+    hd.append(el('h3', '', 'الأهداف'), button('btn', 'إيجاز اليوم', () => openBrief()), button('btn gold', 'هدف جديد', openNewGoal)); hd.firstChild.style.flex = '1';
     box.append(hd);
     if (!S.goals.length) box.append(el('p', 'empty', 'أعطِ المدير هدفاً كبيراً، وسيقسّمه ويوزعه على الفريق ويسلّمك تقريراً نهائياً.'));
     else {

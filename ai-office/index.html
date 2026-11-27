@@ -108,6 +108,8 @@
   <header>
     <h2>لوحة المهام</h2>
     <span class="muted" id="board-hint">اسحب المهمة من ⠿ وأفلتها على روبوت أو على اسم وكيل</span>
+    <button class="btn" id="projects-btn" type="button">المشاريع</button>
+    <button class="btn" id="routines-btn" type="button">متكررة</button>
     <button class="btn gold" id="goal-new" type="button">هدف للمدير</button>
     <button class="btn primary" id="task-new" type="button">+ مهمة جديدة</button>
     <button class="iconbtn" id="board-close" aria-label="إغلاق لوحة المهام">
@@ -118,6 +120,7 @@
   <div class="bfilter">
     <input class="search" id="board-q" type="search" placeholder="ابحث في المهام" aria-label="بحث في المهام">
     <select id="board-agent" aria-label="فلترة حسب الوكيل"><option value="">كل الوكلاء</option></select>
+    <select id="board-project" aria-label="فلترة حسب المشروع" hidden><option value="">كل المشاريع</option></select>
     <select id="board-scope" aria-label="أي لوحة" hidden><option value="mine">مهامي</option><option value="team">لوحة الفريق</option></select>
     <button class="btn" id="team-share" type="button" aria-pressed="false" hidden>شارك لوحتي مع الفريق</button>
   </div>
@@ -192,7 +195,10 @@
     <label class="check"><input type="checkbox" id="set-music">موسيقى مكتب هادئة</label>
     <label class="field">مستوى الصوت<input type="range" id="set-vol" min="0" max="100" step="5"></label>
     <div class="row"><button class="btn" id="set-store" type="button">متجر الوكلاء</button><button class="btn" id="set-plans" type="button">الاشتراك</button><button class="btn" id="set-invite" type="button">ادعُ زملاءك</button></div>
+    <button class="btn gold" id="set-kb" type="button">ملف الشركة والمعرفة</button>
     <button class="btn" id="set-services" type="button">الخدمات المربوطة: Gmail وDrive والمكالمات</button>
+    <label class="field">ثيم المكتب<select id="set-theme"></select></label>
+    <label class="check"><input type="checkbox" id="set-brief">إيجاز من المدير أول كل يوم</label>
     <label class="field">جودة الرسوم<select id="set-quality">
       <option value="auto">تلقائي حسب سرعة الجهاز</option><option value="high">عالية: ظلال ناعمة وانعكاسات</option>
       <option value="balanced">متوازنة</option><option value="low">منخفضة: أسرع</option></select></label>

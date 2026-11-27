@@ -15,6 +15,9 @@ import { openModal, openFile } from './modal.js';
 import { setLive, endLive } from './holo.js';
 import { skillsPrompt, remember } from './growth.js';
 import { checkBudget, recordUsage } from './usage.js';
+import { taskTools, toolsAvailable, toolsHint, finalText } from './agenttools.js';
+import { stars, askRating, rateTask, qaReview } from './rating.js';
+import { projectById, projectSelect, dueLabel, isOverdue } from './projects.js';
 
 const runs = new Map(); // taskId -> AbortController of the running step
 export const taskById = id => S.tasks.find(t => t.id === id);
@@ -23,9 +26,9 @@ const nameOf = key => byKey(key)?.a.name || 'وكيل محذوف';
 const save = t => { t.updatedAt = Date.now(); put('tasks', t.id, t); emit('tasks-changed', t); };
 
 /* ------------------------------------------------------------------ model */
-export function createTask({ title, desc = '', chain = [], approval = true, goalId = '', deps = [], hold = false, after = null }) {
+export function createTask({ title, desc = '', chain = [], approval = true, goalId = '', deps = [], hold = false, after = null, parentId = '', projectId = '', due = '', qa = false, routineId = '' }) {
   const t = { id: uid('t'), title, desc, status: 'todo', chain: chain.filter(Boolean), step: 0, progress: 0, approval,
-    outputs: [], feedback: '', error: '', paused: false, goalId, deps, hold, after, createdAt: Date.now(), updatedAt: Date.now() };
+    outputs: [], feedback: '', error: '', paused: false, goalId, deps, hold, after, parentId, projectId, due, qa, routineId, createdAt: Date.now(), updatedAt: Date.now() };
   S.tasks.unshift(t); save(t);
   schedule();
   return t;
@@ -74,12 +77,12 @@ function goalLine(t) {
   const mem = deps.map(f => `\nمن عمل ${f.agentName} («${f.title}»):\n«${clip(f.content, 5000)}»`).join('\n');
   return `الهدف الكبير: ${g.text}\n${mem ? 'ابنِ على ما أنجزه زملاؤك:' + mem + '\n' : ''}`;
 }
-function stepPrompt(t, ag) {
+function stepPrompt(t, ag, tools = false) {
   const prev = t.outputs.length ? S.files.find(f => f.id === t.outputs[t.outputs.length - 1]) : null;
   const next = byKey(t.chain[t.step + 1]);
   const prevAgent = prev ? byKey(prev.agentKey) : null;
   const redo = t.feedback && prev && prev.agentKey === ag.a.key;
-  return `${identity(ag)}
+  return `${identity(ag, `${t.title} ${t.desc || ''}`)}
 
 لديك مهمة عمل حقيقية${t.goalId ? ' كلّفك بها المدير التنفيذي ضمن هدف أكبر' : ' من المستخدم'}. نفّذها الآن بنفسك وسلّم الناتج كاملاً.
 ${goalLine(t)}عنوان المهمة: ${t.title}
@@ -88,7 +91,7 @@ ${t.desc ? `التفاصيل: ${t.desc}\n` : ''}${prev && !redo ? `\nهذا ما
 - ابدأ بسطر واحد هو عنوان الملف، ثم سطر فارغ، ثم المحتوى.
 - نظّم المحتوى بفقرات قصيرة وقوائم مرقمة عند الحاجة، بنص عادي بلا Markdown (لا # ولا **).
 - الطول المناسب من 150 إلى 700 كلمة حسب حجم المهمة.
-- اكتب بالعربية إلا إذا طلبت المهمة لغة أخرى.${skillsPrompt(ag)}`;
+- اكتب بالعربية إلا إذا طلبت المهمة لغة أخرى.${skillsPrompt(ag)}${tools ? toolsHint() : ''}`;
 }
 
 async function runStep(t, ag) {
@@ -111,9 +114,12 @@ async function runStep(t, ag) {
   try {
     if (aiReady()) {
       checkBudget(ag);
-      const res = await AI.sample(stepPrompt(t, ag), { modelTier: 'complex', cache: false, signal: ctl.signal,
-        onText: ({ text }) => { streamed = text.length; setLive(ag, { title: t.title, text, kind: 'مهمة' }); } });
-      text = res.text.trim(); recordUsage(ag, stepPrompt(t, ag).length, text.length);
+      const useTools = S.agentTools !== false && await toolsAvailable();
+      const prompt = stepPrompt(t, ag, useTools);
+      const opts = { modelTier: 'complex', signal: ctl.signal, onText: ({ text }) => { streamed = text.length; setLive(ag, { title: t.title, text: useTools ? finalText(text) || text : text, kind: 'مهمة' }); } };
+      if (useTools) opts.tools = taskTools(t, ag, { createTask }); else opts.cache = false;
+      const res = await AI.sample(prompt, opts);
+      text = useTools ? finalText(res.text) : res.text.trim(); recordUsage(ag, prompt.length, res.text.length);
     } else {
       // no Claude here: simulate the work so the flow can still be seen, and say so in the file
       for (let k = 0; k < 20 && !ctl.signal.aborted; k++) { await wait(400); streamed += 130; setLive(ag, { title: t.title, text: `أعمل على «${t.title}»…\n`.repeat(1 + (k >> 2)), kind: 'مهمة' }); }
@@ -147,6 +153,21 @@ async function runStep(t, ag) {
   ag.task = null; ag.progress = -1; endLive(ag);
 
   const next = byKey(t.chain[t.step + 1]);
+  // the CEO checks the final result first; work that falls short goes back once with notes
+  if (!next && t.qa) {
+    const r = await qaReview(t, ag, file);
+    if (r) {
+      file.qa = r; put('files', file.id, file);
+      const boss = byKey('ceo');
+      if (!r.ok && !t.qaRedo && taskById(t.id)) {
+        t.qaRedo = true; t.feedback = `ملاحظات المدير التنفيذي بعد مراجعة الجودة (${r.score}/10): ${r.notes || 'ارفع المستوى ليلبي المطلوب بالكامل.'}`;
+        t.status = 'todo'; save(t);
+        if (boss) { showBubble(boss, `${r.score}/10، نحتاج تحسيناً`, 2800); addEvent(boss, `أعاد «${clip(t.title, 50)}» إلى ${ag.a.name} للتحسين (${r.score}/10)`, t.id); }
+        emit('agents-changed'); schedule(); return;
+      }
+      if (boss) { showBubble(boss, `${r.score}/10 ✓`, 2400); addEvent(boss, `اعتمد جودة «${clip(t.title, 50)}» (${r.score}/10)`, t.id); }
+    }
+  }
   if (next) return handoff(t, ag, next);
   if (t.approval) {
     t.status = 'review'; save(t);
@@ -207,6 +228,7 @@ export function approve(t) {
   emit('task-approved', t);
   t.chain.forEach(k => { const o = byKey(k); if (o) { nudgeMood(o, 10); showBubble(o, 'رائع، شكراً!', 2200); } });
   finishDone(t);
+  if (!t.rating) setTimeout(() => askRating(t), 600);
 }
 export function revise(t) {
   if (!t) return;
@@ -263,13 +285,20 @@ export function openNewTask(presetKey = '') {
   const afterTo = el('input'); afterTo.type = 'email'; afterTo.dir = 'ltr'; afterTo.id = 'task-after-to'; afterTo.placeholder = 'name@example.com'; afterTo.hidden = true;
   after.onchange = () => { afterTo.hidden = !['email', 'slack'].includes(after.value); afterTo.type = after.value === 'slack' ? 'text' : 'email'; afterTo.placeholder = after.value === 'slack' ? 'اسم القناة، مثل general' : 'name@example.com'; };
   const chk = el('label', 'check'); chk.append(appr, document.createTextNode('تحتاج موافقتي قبل أن تُعتبر منجزة'));
+  const qa = el('input'); qa.type = 'checkbox'; qa.id = 'task-qa'; qa.checked = !!byKey('ceo');
+  const qaChk = el('label', 'check'); qaChk.append(qa, document.createTextNode('يراجع المدير التنفيذي الجودة قبل أن تصلني'));
+  const proj = projectSelect('task-project', S.lastProject || '');
+  const due = el('input'); due.type = 'date'; due.id = 'task-due';
+  const when = el('div', 'row'); when.append(field('المشروع', proj), field('موعد التسليم (اختياري)', due));
   frag.append(el('h3', '', 'أمثلة'), ex, field('عنوان المهمة', title), field('التفاصيل', desc), field('المسؤول', who),
-    field('ثم يسلّمها إلى (اختياري)', h1), field('ثم إلى (اختياري)', h2), field('بعد الإنجاز (ينتظر موافقتك)', after), afterTo, chk);
+    field('ثم يسلّمها إلى (اختياري)', h1), field('ثم إلى (اختياري)', h2), field('بعد الإنجاز (ينتظر موافقتك)', after), afterTo, when, chk, qaChk);
   let close;
   const go = button('btn primary', 'أنشئ المهمة', () => {
     const v = title.value.trim(); if (!v) return title.focus();
     const chain = [who.value, h1.value, h2.value].filter(Boolean);
-    createTask({ title: v, desc: desc.value.trim(), chain, approval: appr.checked, after: after.value ? { kind: after.value, to: afterTo.value.trim() } : null });
+    const projectId = $('task-project').value.replace('__new', ''); S.lastProject = projectId;
+    createTask({ title: v, desc: desc.value.trim(), chain, approval: appr.checked, after: after.value ? { kind: after.value, to: afterTo.value.trim() } : null,
+      projectId, due: due.value || '', qa: qa.checked });
     close();
   });
   close = openModal('مهمة جديدة', frag, [go]);
@@ -278,6 +307,16 @@ function openTask(t) {
   const frag = document.createDocumentFragment();
   if (t.desc) frag.append(el('p', 'lead', t.desc));
   frag.append(el('div', 'muted', 'المسار: ' + (t.chain.map(nameOf).join(' ← ') || 'غير مسندة')));
+  const meta = el('div', 'row');
+  const proj = projectSelect('edit-project', t.projectId || ''); const due = el('input'); due.type = 'date'; due.id = 'edit-due'; due.value = t.due || '';
+  const commit = () => { t.projectId = $('edit-project').value.replace('__new', ''); t.due = due.value || ''; save(t); };
+  proj.addEventListener('change', commit); due.addEventListener('change', commit);
+  const fl = (l, n) => { const x = el('label', 'field', l); x.append(n); return x; };
+  meta.append(fl('المشروع', proj), fl('موعد التسليم', due)); frag.append(meta);
+  if (t.status === 'done' && byKey(t.chain[t.chain.length - 1])) {
+    const rate = el('div', 'rate'); const drawRate = () => rate.replaceChildren(el('span', 'muted', 'تقييمك: '), stars(t.rating?.stars || 0, n => { rateTask(t, n, t.rating?.note || ''); drawRate(); }), button('linkish', 'أضف ملاحظة', () => askRating(t)));
+    drawRate(); frag.append(rate);
+  }
   const files = t.outputs.map(id => S.files.find(f => f.id === id)).filter(Boolean);
   if (files.length) {
     frag.append(el('h3', '', 'الملفات'));
@@ -302,7 +341,9 @@ export function renderBoard() {
   const q = ($('board-q')?.value || '').trim().toLowerCase(), who = $('board-agent')?.value || '';
   const sel = $('board-agent');
   if (sel && sel.options.length !== S.agents.length + 1) { const v = sel.value; sel.length = 1; S.agents.forEach(o => sel.append(new Option(o.a.name, o.a.key))); sel.value = v; }
-  const keep = t => (!q || (t.title + ' ' + t.desc).toLowerCase().includes(q)) && (!who || t.chain.includes(who));
+  const pf = $('board-project'); if (pf) { const v = pf.value; pf.length = 1; S.projects.forEach(p => pf.append(new Option(p.name, p.id))); pf.value = v; pf.hidden = !S.projects.length; }
+  const proj = pf?.value || '';
+  const keep = t => (!q || (t.title + ' ' + t.desc).toLowerCase().includes(q)) && (!who || t.chain.includes(who)) && (!proj || t.projectId === proj);
   STATUS.forEach((s, i) => {
     const list = S.tasks.filter(t => t.status === s.id && keep(t));
     const col = el('div', 'col'); col.dataset.status = s.id;
@@ -321,6 +362,15 @@ function card(t) {
   grip.addEventListener('pointerdown', e => startDrag(e, t, c));
   const ttl = button('linkish', t.title, () => openTask(t)); ttl.style.color = 'var(--fg)'; ttl.style.fontWeight = '600';
   top.append(grip, ttl); c.append(top);
+  const pj = projectById(t.projectId), dl = dueLabel(t);
+  if (pj || dl || t.rating || t.parentId) {
+    const tags = el('div', 'tags');
+    if (pj) { const x = el('span', 'ptag', pj.name); x.style.setProperty('--c', pj.color); tags.append(x); }
+    if (dl) tags.append(el('span', 'due' + (isOverdue(t) ? ' late' : ''), dl));
+    if (t.parentId) tags.append(el('span', 'sub', 'متابعة'));
+    if (t.rating) tags.append(stars(t.rating.stars));
+    c.append(tags);
+  }
   if (t.chain.length) {
     const who = el('div', 'who');
     t.chain.forEach((k, i) => {
@@ -402,6 +452,7 @@ export function restoreTasks() {
 export function initBoard() {
   initTeamBoard(renderBoard);
   $('task-new').onclick = () => openNewTask();
-  $('board-q').addEventListener('input', renderBoard); $('board-agent').addEventListener('change', renderBoard);
+  $('board-q').addEventListener('input', renderBoard); $('board-agent').addEventListener('change', renderBoard); $('board-project').addEventListener('change', renderBoard);
+  on('projects-changed', renderBoard);
   renderBoard();
 }

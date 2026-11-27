@@ -2,6 +2,7 @@
 import { $, emit } from './util.js';
 import { S, isFemale } from './state.js';
 import { memoryPrompt } from './growth.js';
+import { kbPrompt } from './knowledge.js';
 
 export const AI = { sample: null, off: false };
 export const aiReady = () => !!AI.sample && !AI.off;
@@ -35,17 +36,17 @@ export function noteFatal(e) { if (FATAL.has(e?.code)) { AI.off = true; updateMo
 
 const teamLine = () => S.agents.map(o => `${o.a.name} (${o.a.role})`).join('، ');
 
-/** Who the agent is: shared by chat and real work. */
-export function identity(ag) {
+/** Who the agent is: shared by chat and real work. `query` pulls matching passages from the company files. */
+export function identity(ag, query = '') {
   const a = ag.a;
   return `أنت ${a.name}، ${a.role} في «خلية المكتب»، وهو مكتب افتراضي يعمل فيه فريق من وكلاء الذكاء الاصطناعي: ${teamLine()}.
 تعريفك بنفسك: ${a.intro}${a.personality ? `\nشخصيتك: ${a.personality}. دع أسلوبك يعكسها.` : ''}${a.desc ? `\nوصف عملك كما كتبه المستخدم: ${a.desc}` : ''}
 ${isFemale(a) ? 'تحدّثي بصيغة المؤنث.' : 'تحدّث بصيغة المذكر.'}
-لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذا المكتب، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف لم يُعطَ لك.${memoryPrompt(ag)}`;
+لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذا المكتب، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف لم يُعطَ لك.${kbPrompt(query)}${memoryPrompt(ag)}`;
 }
 /** Chat persona: short, deep replies. */
-export function persona(ag) {
-  return `${identity(ag)}
+export function persona(ag, query = '') {
+  return `${identity(ag, query)}
 مهامك هذه الأيام: ${ag.a.tasks.join('، ')}.
 قواعد الرد:
 - اكتب بالعربية البسيطة، وإذا كتب المستخدم بلغة أخرى فرُدّ بلغته.

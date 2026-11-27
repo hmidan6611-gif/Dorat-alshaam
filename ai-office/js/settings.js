@@ -4,12 +4,14 @@ import { setAudio, audioPrefs } from './audio.js';
 import { setQuality, qualityMode, currentLevel, fps } from './quality.js';
 import { runBuild } from './scene.js';
 import { openReplay } from './replay.js';
+import { THEMES, themeMode, setTheme } from './themes.js';
+import { briefAuto, setBriefAuto } from './brief.js';
 
 const LABEL = { low: 'منخفضة', balanced: 'متوازنة', high: 'عالية' };
 function sync() {
   const p = audioPrefs();
   $('set-sfx').checked = p.sfx; $('set-music').checked = p.music; $('set-vol').value = Math.round(p.volume * 100);
-  $('set-quality').value = qualityMode();
+  $('set-quality').value = qualityMode(); $('set-theme').value = themeMode(); $('set-brief').checked = briefAuto();
   $('set-q-now').textContent = `الآن: ${LABEL[currentLevel()]} · ≈ ${fps.now} إطار/ث`;
   $('sound-on').hidden = !(p.sfx || p.music);
 }
@@ -21,6 +23,9 @@ export function initSettings() {
   $('set-music').onchange = e => { setAudio({ music: e.target.checked }); sync(); };
   $('set-vol').oninput = e => setAudio({ volume: e.target.value / 100 });
   $('set-quality').onchange = e => { setQuality(e.target.value); sync(); };
+  Object.entries(THEMES).forEach(([v, l]) => $('set-theme').append(new Option(l, v)));
+  $('set-theme').onchange = e => setTheme(e.target.value);
+  $('set-brief').onchange = e => setBriefAuto(e.target.checked);
   $('set-cam').onclick = () => { $('cam-btn').click(); pop.hidden = true; };
   $('set-edit').onclick = () => { $('edit-btn').click(); pop.hidden = true; };
   $('set-replay').onclick = () => { runBuild(); pop.hidden = true; };

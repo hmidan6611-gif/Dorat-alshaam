@@ -71,7 +71,7 @@ async function ask(q, spoken = false) {
   }
   try { checkBudget(ag); } catch (e) { t.remove(); note(e.message); return; }
   a.history.push({ role: 'user', content: q });
-  const turns = [{ role: 'user', content: persona(ag) }, ...a.history.slice(-16)];
+  const turns = [{ role: 'user', content: persona(ag, q) }, ...a.history.slice(-16)];
   ctl = new AbortController(); setBusy(true);
   let out = null;
   const ensureOut = () => { if (!out) { t.remove(); out = agentBubble(ag, ''); showBubble(ag, f ? 'تكتب…' : 'يكتب…'); } return out; };
