@@ -33,6 +33,14 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/usage.js` | Per-agent daily budgets for Claude requests with warnings and a hard stop |
 | `js/multiuser.js` | Colleagues as live avatars (presence only), invite instructions |
 | `js/workspace.js` | Google Calendar (read on click, book after approval) and Slack posts (after approval) |
+| `js/knowledge.js` | Company profile and knowledge files; matching passages go into agent prompts |
+| `js/agenttools.js` | Tools agents use while working: search company files, read colleague files, ask a colleague, open a follow-up |
+| `js/rating.js` | Star ratings with notes the agent remembers; the CEO's quality review before delivery |
+| `js/projects.js` | Projects, due dates, overdue tracking and the projects timeline |
+| `js/routines.js` | Recurring tasks created when due |
+| `js/brief.js` | The CEO's daily brief |
+| `js/themes.js` | Seasonal themes and always-on string lights |
+| `js/lighting.js` | Brightness and warmth settings; floor lamps and ceiling lights follow the day cycle |
 | `js/teamboard.js` | Optional shared team board: task titles and progress only, off by default, each person writes only their own entry |
 | `js/templates.js` | Agent store: ready-made agents installed with one click |
 | `js/plans.js` | Subscription plans by number of agents (no real payment) |

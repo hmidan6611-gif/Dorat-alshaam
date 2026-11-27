@@ -8,7 +8,7 @@ import { roomMax } from './layout.js';
 import { on, pick } from './util.js';
 import { showBubble } from './agents.js';
 
-export const THEMES = { auto: 'تلقائي حسب التاريخ', none: 'بدون', ramadan: 'رمضان', eid: 'العيد', party: 'احتفال' };
+export const THEMES = { auto: 'تلقائي: مواسم وإلا إضاءة زينة', lights: 'إضاءة زينة دائمة', none: 'بدون', ramadan: 'رمضان', eid: 'العيد', party: 'احتفال' };
 const KEY = 'deskhive:theme';
 let mode = 'auto', active = 'none';
 try { mode = localStorage.getItem(KEY) || 'auto'; } catch { /* private window */ }
@@ -23,7 +23,7 @@ function fromCalendar(d = new Date()) {
     if (m === 9) return 'ramadan';
     if ((m === 10 && day <= 3) || (m === 12 && day >= 10 && day <= 13)) return 'eid';
   } catch { /* no Hijri calendar here */ }
-  return 'none';
+  return 'lights';
 }
 
 const decos = new Map(); // floorId -> {group, bulbs, colors, balloons}
@@ -31,6 +31,7 @@ const PALETTE = {
   ramadan: ['#ffd166', '#ffb347', '#fff1c1'],
   eid: ['#ff5c8a', '#2fe08a', '#ffc53d', '#4d7cff', '#b06bff'],
   party: ['#22d3ee', '#f472b6', '#a3e635', '#facc15'],
+  lights: ['#fff1c1', '#ffd9a0', '#ffe8c4'],
 };
 
 function stringLights(g, colors, hi) {
@@ -79,7 +80,7 @@ function decorate(floorId, theme) {
     const cres = mesh(new THREE.TorusGeometry(0.55, 0.09, 10, 40, Math.PI * 1.35), glow('#ffd166', 1.6), -5.2, 4.3, -7.9, g); cres.rotation.z = 0.9; cres.castShadow = false;
     const star = mesh(new THREE.OctahedronGeometry(0.13), glow('#fff1c1', 1.8), -4.75, 4.55, -7.9, g); star.castShadow = false;
     [[-6.5, -7.6], [-2.4, -7.6], [1.6, -7.6], [-7.6, -4.6], [-7.6, -0.6], [-7.6, 3.4]].forEach(([x, z], i) => d.lanterns.push(lantern(g, x, z, 3.6 + (i % 2) * 0.35, i % 2 ? '#ffb347' : '#ffd166')));
-  } else {
+  } else if (theme !== 'lights') {
     const spots = [[-7.2, -7.2], [-6.7, -7.3], [-7.3, -6.6], [hi - 0.8, -7.2], [hi - 1.3, -7.3]];
     spots.forEach(([x, z], i) => d.balloons.push(balloon(g, x, z, d.colors[i % d.colors.length])));
   }
@@ -122,7 +123,7 @@ export function initThemes() {
   on('floor-resized', applyTheme);
   // now and then someone says something for the season
   setInterval(() => {
-    if (active === 'none' || document.hidden || !S.agents.length) return;
+    if (!GREET[active] || document.hidden || !S.agents.length) return;
     const ag = pick(S.agents.filter(o => o.a.floorId === S.viewFloor && !o.task)); if (ag) showBubble(ag, pick(GREET[active]), 2800);
   }, 45000);
 }

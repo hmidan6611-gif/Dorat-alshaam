@@ -15,6 +15,22 @@ export const faceOf = (o, lx, lz) => Math.atan2(lx, lz) + rotAngle(o.rot);
 const glassMat = new THREE.MeshStandardMaterial({ color: '#a9c1ff', transparent: true, opacity: 0.13, roughness: 0.1, metalness: 0.2, depthWrite: false });
 const postMat = std('#2a3566', { metalness: 0.6, roughness: 0.35 });
 export const lampMats = []; // desk-lamp bulbs, brightened at night by the day cycle
+/** Room lights (floor lamps, ceiling lights): their glow and pool of light follow the day cycle and your light settings. */
+export const roomLights = new Set();
+let poolTex = null;
+function pool() {
+  if (!poolTex) {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+    const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.45, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128); poolTex = new THREE.CanvasTexture(c);
+  }
+  return new THREE.MeshBasicMaterial({ map: poolTex, color: '#ffd9a0', transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+}
+function lightRec(g, bulb, floorPool, radius, y) {
+  const rec = { bulb, pool: floorPool, radius, y, group: g, light: null };
+  roomLights.add(rec); g.userData.lightRec = rec;
+  return rec;
+}
 
 /* ------------------------------------------------------------------ catalog */
 // rect = [x1, z1, x2, z2] in object-local units; spots = [x, z, lookX, lookZ, sit]
@@ -34,9 +50,11 @@ export const CATALOG = {
     kind: 'table', m: 'في الاجتماع', f: 'في الاجتماع', gain: 0 },
   elevator: { label: 'مصعد', w: 1.8, d: 0.9, rects: [[-0.8, -0.4, 0.8, 0.4]], spots: [[0, 0.9, 0, 0]], kind: 'elevator', fixed: true },
   reception: { label: 'الاستقبال', w: 2.8, d: 1.8, rects: [[-1.2, -0.75, 1.2, 0.35]], spots: [[0.7, 0.95, 0.7, 0]], kind: 'reception', m: 'يراجع طلبات الموافقة', f: 'تراجع طلبات الموافقة', gain: 1, unique: true },
+  lamp: { label: 'أباجورة', w: 0.7, d: 0.7, rects: [[-0.22, -0.22, 0.22, 0.22]], light: true },
+  pendant: { label: 'إنارة سقف', w: 1.2, d: 1.2, light: true, overhead: true },
   core: { label: 'الخلية', w: 2.8, d: 2.8, rects: [[-1.25, -1.25, 1.25, 1.25]], spots: [[-1.9, -0.35, 0, 0], [-1.9, 0.35, 0, 0]], kind: 'core', m: 'يراقب الخلية', f: 'تراقب الخلية', gain: 2, unique: true },
 };
-export const PLACEABLE = ['office', 'plant', 'sofa', 'screen', 'shelf', 'cooler', 'coffee', 'table', 'reception'];
+export const PLACEABLE = ['office', 'plant', 'sofa', 'screen', 'shelf', 'cooler', 'coffee', 'table', 'reception', 'lamp', 'pendant'];
 
 /* ------------------------------------------------------------------ office geometry (room-local) */
 export const OFFICE = { HW: 1.75, ZB: -1.7, ZF: 1.7, DOOR: 0.55, SEAT: [0, -0.5], DESK_Z: 0.45 };
@@ -85,7 +103,7 @@ export function drawObject(o, color = '#94a3b8') {
   const g = new THREE.Group(); g.position.set(o.x, 0, o.z); g.rotation.y = rotAngle(o.rot);
   const parts = {};
   ({ office: (gg, oo, cc, pp) => { drawOffice(gg, oo, cc, pp); if (oo.exec) drawExec(gg, oo, cc, pp); }, plant: drawPlant, cooler: drawCooler, coffee: drawCoffee, sofa: drawSofa, screen: drawScreen,
-    shelf: drawShelf, table: drawTable, elevator: drawElevator, reception: drawReception, core: () => {} })[o.type]?.(g, o, color, parts);
+    shelf: drawShelf, table: drawTable, elevator: drawElevator, reception: drawReception, lamp: drawLamp, pendant: drawPendant, core: () => {} })[o.type]?.(g, o, color, parts);
   return { group: g, parts };
 }
 
@@ -153,6 +171,27 @@ function drawExec(g, o, color, P) {
   [[0, 0.7, 0, .3], [.15, 1.0, 0, .22], [-.12, 0.95, .05, .24]].forEach(([a, b, d, r]) => mesh(new THREE.SphereGeometry(r, 14, 12), std('#33c07a'), a, b, d, pot));
   mesh(new THREE.ConeGeometry(0.07, 0.22, 12), std(color, { metalness: 0.9, roughness: 0.2, emissive: color, emissiveIntensity: 0.3 }), 0.95, 1.0, -0.15, P.desk);
   mesh(new THREE.BoxGeometry(2.6, 0.03, 1.3), glow(color, 0.35), 0, 0.745, 0, P.desk);
+}
+function drawLamp(g) {
+  const metal = std('#c9cfe8', { metalness: 0.8, roughness: 0.3 });
+  mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.05, 20), metal, 0, 0.025, 0, g);
+  mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.7, 10), metal, 0, 0.88, 0, g);
+  const shade = mesh(new THREE.CylinderGeometry(0.2, 0.32, 0.38, 22, 1, true), std('#fff1d6', { emissive: '#ffcf8a', emissiveIntensity: 0.6, side: THREE.DoubleSide, roughness: 0.6 }), 0, 1.85, 0, g);
+  const bulb = mesh(new THREE.SphereGeometry(0.09, 14, 10), new THREE.MeshBasicMaterial({ color: '#ffe2b0', toneMapped: false }), 0, 1.78, 0, g); bulb.castShadow = false;
+  const p = mesh(new THREE.PlaneGeometry(3.4, 3.4), pool(), 0, 0.015, 0, g); p.rotation.x = -Math.PI / 2; p.castShadow = false; p.renderOrder = 1; p.raycast = () => {};
+  lightRec(g, [bulb.material, shade.material], p.material, 4.5, 1.8);
+}
+function drawPendant(g) {
+  const dark = std('#1a2150', { metalness: 0.6, roughness: 0.4 });
+  mesh(new THREE.CylinderGeometry(0.006, 0.006, 2.2, 4), dark, 0, 4.9, 0, g);
+  const dome = mesh(new THREE.SphereGeometry(0.42, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), std('#20284f', { metalness: 0.7, roughness: 0.35, side: THREE.DoubleSide }), 0, 3.55, 0, g);
+  dome.castShadow = false;
+  const ring = mesh(new THREE.TorusGeometry(0.4, 0.025, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false }), 0, 3.56, 0, g); ring.rotation.x = Math.PI / 2; ring.castShadow = false;
+  const bulb = mesh(new THREE.SphereGeometry(0.13, 14, 10), new THREE.MeshBasicMaterial({ color: '#fff0d0', toneMapped: false }), 0, 3.5, 0, g); bulb.castShadow = false;
+  const cone = mesh(new THREE.ConeGeometry(1.7, 3.4, 28, 1, true), new THREE.MeshBasicMaterial({ color: '#ffd9a0', transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), 0, 1.8, 0, g);
+  cone.castShadow = false; cone.raycast = () => {};
+  const p = mesh(new THREE.PlaneGeometry(4.2, 4.2), pool(), 0, 0.016, 0, g); p.rotation.x = -Math.PI / 2; p.castShadow = false; p.renderOrder = 1; p.raycast = () => {};
+  lightRec(g, [bulb.material, ring.material], p.material, 6, 3.4).cone = cone.material;
 }
 function drawPlant(g, o, c, P) {
   mesh(new THREE.CylinderGeometry(0.45, 0.35, 0.7, 24), std('#e8ecff'), 0, 0.35, 0, g);
@@ -254,8 +293,15 @@ export function defaultMainObjects() {
     { id: 'elev', type: 'elevator', x: 7.1, z: -7.5, rot: 0 },
     { id: 'core', type: 'core', x: 5.2, z: -1.3, rot: 0 },
     { id: 'reception', type: 'reception', x: 5.6, z: -5.4, rot: 0 },
+    ...defaultLights(),
   ];
 }
+/** Lights every main office gets: a ceiling light over the meeting table and the lounge, a lamp by the sofa. */
+export const defaultLights = () => [
+  { id: 'pend_table', type: 'pendant', x: 1.0, z: 6.3, rot: 0 },
+  { id: 'pend_lounge', type: 'pendant', x: 2.6, z: -2.6, rot: 0 },
+  { id: 'lamp_sofa', type: 'lamp', x: -7.45, z: 3.75, rot: 0 },
+];
 /** A new department floor: elevator, lounge corner and a few empty offices. */
 export function defaultDeptObjects(n = 3) {
   const offices = [[-5.2, -5.6, 1], [-0.6, -5.6, -1], [-5.2, -1.6, 1], [-0.6, -1.6, -1], [-5.2, 2.4, 1], [-0.6, 2.4, -1]].slice(0, n);

@@ -5,7 +5,7 @@ import { BUILTIN, CEO } from './data.js';
 import { THREE, renderer, camera, coreBall, corePos, focusOn, runBuild, startLoop, ring3d, boost, sendPulse, shown } from './scene.js';
 import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCount, showBubble, saveAgentState } from './agents.js';
 import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL, expandFloor } from './floors.js';
-import { roomCenter } from './layout.js';
+import { roomCenter, defaultLights } from './layout.js';
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { initApprovals, restoreApprovals } from './approvals.js';
 import { initReplay, restoreReplay } from './replay.js';
@@ -45,7 +45,7 @@ import { initQuality } from './quality.js';
 import { initSettings } from './settings.js';
 
 /* --------------------------------------------------------------- the office */
-S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, objects: defaultMainObjects() }];
+S.floors = [{ id: 'main', name: 'المكتب الرئيسي', dept: 'الإدارة', color: '#3d6bff', order: 0, lit: true, objects: defaultMainObjects() }];
 S.viewFloor = 'main';
 buildFloor(S.floors[0]);
 [...BUILTIN, CEO].forEach(b => makeAgent({ ...b, custom: false, history: [], floorId: 'main', officeId: 'o_' + b.key }));
@@ -234,7 +234,7 @@ async function restore() {
     if (f.id === 'main') {
       const main = S.floors[0];
       main.objects.forEach(o => undrawObj(o.id));
-      main.objects = f.objects; main.name = f.name || main.name;
+      main.objects = f.objects; main.name = f.name || main.name; main.lit = !!f.lit;
       if (f.size === 20) expandFloor(main, false);
       main.objects.forEach(o => drawObj(main, o));
       rebuildNav(main);
@@ -243,6 +243,15 @@ async function restore() {
         const r = { id: 'reception', type: 'reception', x: 5.6, z: -5.4, rot: 0 }, f = footprint(r);
         const clash = main.objects.some(x => { const p = footprint(x); return p.x1 < f.x2 && p.x2 > f.x1 && p.z1 < f.z2 && p.z2 > f.z1; });
         if (!clash) { main.objects.push(r); drawObj(main, r); rebuildNav(main); saveFloor(main); }
+      }
+      // layouts saved before room lights existed get a few, where they fit
+      if (!main.lit && !main.objects.some(o => o.type === 'lamp' || o.type === 'pendant')) {
+        defaultLights().forEach(l => {
+          const f = footprint(l), over = l.type === 'pendant';
+          const clash = !over && main.objects.some(x => x.type !== 'pendant' && (() => { const p = footprint(x); return p.x1 < f.x2 && p.x2 > f.x1 && p.z1 < f.z2 && p.z2 > f.z1; })());
+          if (!clash) { main.objects.push({ ...l }); drawObj(main, l); }
+        });
+        rebuildNav(main); main.lit = true; saveFloor(main);
       }
       // layouts saved before the CEO existed get an executive office in free space
       if (!main.objects.some(o => o.agentKey === 'ceo')) {

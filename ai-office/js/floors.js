@@ -2,7 +2,7 @@
 // but agents on every floor keep living and working.
 import { THREE, world, std, glow, mesh, build, BUILD, tiles, windowPanes, RoundedBoxGeometry, animateIn, setCorePos, setCoreVisible } from './scene.js';
 import { S, byKey } from './state.js';
-import { drawObject, CATALOG, spotsOf, footprint, officeSeat, roomMax, roomCenter } from './layout.js';
+import { drawObject, CATALOG, spotsOf, footprint, officeSeat, roomMax, roomCenter, roomLights } from './layout.js';
 import { rebuildNav, findPath } from './nav.js';
 import { put } from './store.js';
 import { emit, gsap } from './util.js';
@@ -71,6 +71,7 @@ export function drawObj(floor, o, live = false) {
 export function undrawObj(id) {
   const rec = FL.drawn.get(id); if (!rec) return;
   rec.group.parent?.remove(rec.group);
+  if (rec.group.userData.lightRec) roomLights.delete(rec.group.userData.lightRec);
   const objs = new Set(); rec.group.traverse(o => objs.add(o));
   for (let k = BUILD.length - 1; k >= 0; k--) if (objs.has(BUILD[k].obj)) BUILD.splice(k, 1);
   rec.group.traverse(o => o.geometry?.dispose());
@@ -112,7 +113,7 @@ export function expandFloor(floor, live = true) {
   rebuildNav(floor); saveFloor(floor); emit('floor-resized', floor);
   return true;
 }
-export const saveFloor = f => put('floors', f.id, { id: f.id, name: f.name, dept: f.dept || '', color: f.color, order: f.order, size: f.size === 20 ? 20 : 16, objects: f.objects, at: Date.now() });
+export const saveFloor = f => put('floors', f.id, { id: f.id, name: f.name, dept: f.dept || '', color: f.color, order: f.order, size: f.size === 20 ? 20 : 16, lit: !!f.lit, objects: f.objects, at: Date.now() });
 
 /** Interaction spots on a floor, optionally filtered by kind. */
 export function spotsOn(floorId, kinds) {
@@ -123,7 +124,7 @@ export const elevatorOf = floorId => spotsOn(floorId, ['elevator'])[0] || { x: 6
 
 /** Find a free spot for a new office on a floor (no overlap, inside the room). */
 export function findOfficeSpot(floor) {
-  const fps = floor.objects.map(footprint), hi = roomMax(floor) - 0.2, top = roomMax(floor) - 2;
+  const fps = floor.objects.filter(x => !CATALOG[x.type]?.overhead).map(footprint), hi = roomMax(floor) - 0.2, top = roomMax(floor) - 2;
   const tryRot = (x, z, rot, door) => {
     const o = { type: 'office', x, z, rot, door };
     const f = footprint(o);

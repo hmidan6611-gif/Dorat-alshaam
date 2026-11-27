@@ -18,7 +18,8 @@ function overlaps(floor, o) {
   const f = footprint(o);
   const hi = roomMax(floor) - 0.15;
   if (f.x1 < -7.85 || f.x2 > hi || f.z1 < -7.85 || f.z2 > hi) return true;
-  return floor.objects.some(x => x !== o && x.id !== o.id && (() => { const p = footprint(x); return p.x1 < f.x2 - 0.05 && p.x2 > f.x1 + 0.05 && p.z1 < f.z2 - 0.05 && p.z2 > f.z1 + 0.05; })());
+  if (CATALOG[o.type]?.overhead) return false;
+  return floor.objects.some(x => x !== o && x.id !== o.id && !CATALOG[x.type]?.overhead && (() => { const p = footprint(x); return p.x1 < f.x2 - 0.05 && p.x2 > f.x1 + 0.05 && p.z1 < f.z2 - 0.05 && p.z2 > f.z1 + 0.05; })());
 }
 /** Every office must still reach the elevator. */
 function reachable(floor) {
