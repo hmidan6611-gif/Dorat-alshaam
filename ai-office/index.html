@@ -30,7 +30,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); c
 #scene { position: fixed; inset: 0; }
 #scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .glass { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 14px; }
 
@@ -49,7 +49,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
 /* team list */
 .team { position: fixed; z-index: 4; right: var(--gr); top: calc(var(--top) + 72px); width: 224px; padding: 12px 8px; }
-.team h2 { margin: 0 8px 10px; font: 600 12px/1.2 var(--font-body); color: var(--muted); }
+.team h2 { margin: 0 8px 10px; font: 600 12px/1.2 var(--font-body); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.save { font-weight: 500; font-size: 10.5px; color: var(--good); }
+.save.off { color: var(--muted); }
+.member.add { justify-content: center; border: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
+.member.add:hover:not(:disabled) { border-color: var(--blue); color: var(--fg); }
+.member.add:disabled { opacity: .5; cursor: default; }
 .team ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .member { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; text-align: start; }
 .member:hover { background: rgba(255,255,255,.04); }
@@ -75,10 +80,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .chat header { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
 .chat header .who b { font-size: 14px; }
 .msgs { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
-.msg { max-width: 86%; font-size: 13px; line-height: 1.55; white-space: pre-wrap; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.06); align-self: flex-start; overflow-wrap: anywhere; }
+.msg { position: relative; max-width: 86%; font-size: 13px; line-height: 1.55; white-space: pre-wrap; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.06); align-self: flex-start; overflow-wrap: anywhere; }
 .msg.me { align-self: flex-end; background: var(--blue); color: #fff; }
-.typing span { display: inline-block; width: 5px; height: 5px; margin: 0 1.5px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
-.typing span:nth-child(2) { animation-delay: .15s; } .typing span:nth-child(3) { animation-delay: .3s; }
+.typing .txt i { display: inline-block; width: 5px; height: 5px; margin: 0 1.5px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+.typing .txt i:nth-child(2) { animation-delay: .15s; } .typing .txt i:nth-child(3) { animation-delay: .3s; }
 @keyframes blink { 50% { opacity: .2; } }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
 .chips button { border: 1px solid var(--line); background: rgba(255,255,255,.04); border-radius: 999px; padding: 6px 10px; font-size: 11.5px; }
@@ -93,6 +98,46 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
 .chips button:disabled { opacity: .45; cursor: default; }
 .mode { flex: none; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; color: #e9e2ff; background: rgba(157,123,255,.22); border: 1px solid rgba(157,123,255,.55); }
 .mode.off { color: var(--muted); background: transparent; border-color: var(--line); }
+.play { display: block; margin-top: 6px; border: 0; background: transparent; color: var(--muted); font-size: 11px; padding: 0; }
+.play:hover { color: var(--fg); }
+.iconbtn[aria-pressed="true"] { border-color: var(--blue); background: rgba(61,107,255,.22); color: #fff; }
+form.send .mic { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+form.send .mic.rec { background: #e5484d; border-color: #e5484d; animation: blink 1.2s infinite; }
+.confirm { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; border: 1px solid rgba(229,72,77,.5); background: rgba(229,72,77,.08); font-size: 12px; }
+.confirm span { flex: 1 1 100%; }
+.btn { border: 1px solid var(--line); background: rgba(255,255,255,.05); border-radius: 9px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn.danger { background: #e5484d; border-color: #e5484d; color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+.pane { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+.pane h3 { margin: 4px 0 0; font: 600 12px/1.3 var(--font-body); color: var(--muted); }
+.pane p.lead { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.field input, .field textarea, .pane textarea { background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; color: var(--fg); font: 13px/1.5 var(--font-body); resize: vertical; }
+.seg { display: flex; gap: 6px; }
+.seg label, .swatches label { cursor: pointer; }
+.seg input, .swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: inline-block; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); font-size: 12.5px; color: var(--fg); }
+.seg input:checked + span { background: var(--blue); border-color: var(--blue); color: #fff; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches span { display: block; width: 28px; height: 28px; border-radius: 8px; background: var(--c); border: 2px solid transparent; }
+.swatches input:checked + span { border-color: #fff; box-shadow: 0 0 12px var(--c); }
+.seg input:focus-visible + span, .swatches input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.past { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.past button { width: 100%; text-align: start; border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; }
+.past time { display: block; font-size: 10.5px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+.topic { font-size: 13px; line-height: 1.5; padding: 10px; border-radius: 10px; background: rgba(61,107,255,.12); border: 1px solid rgba(61,107,255,.35); }
+.line { display: flex; gap: 9px; align-items: flex-start; }
+.line .ava { width: 26px; height: 26px; border-radius: 8px; }
+.line .ava i { width: 15px; height: 8px; }
+.line .ava i::before, .line .ava i::after { top: 2px; width: 3px; height: 3px; }
+.line div { min-width: 0; flex: 1; font-size: 12.5px; line-height: 1.6; }
+.line b { display: block; font-size: 12px; color: var(--c); }
+.plan { padding: 12px; border-radius: 12px; border: 1px solid rgba(157,123,255,.45); background: rgba(157,123,255,.1); font-size: 12.5px; line-height: 1.6; }
+.plan ol { margin: 6px 0 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; }
+.plan em { font-style: normal; font-size: 11px; color: var(--c, var(--muted)); }
+.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
 .msg.note { align-self: center; max-width: 100%; font-size: 11.5px; color: var(--muted); background: transparent; border: 1px dashed var(--line); }
 
 /* world-anchored labels */
@@ -112,7 +157,6 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
   .stats .opt { display: none; }
   .topbar { gap: 8px; padding: 0 8px; }
   .brand span { display: none; }
-  .tabs button { padding: 6px 9px; }
   .team { top: auto; bottom: calc(var(--bot) + 12px); left: var(--gl); width: auto; padding: 8px; }
   .team h2 { display: none; }
   .team ul { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
@@ -120,9 +164,11 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
   .member .who span, .member .badge { display: none; }
   .log { max-height: 30vh; }
   .chat { top: auto; left: var(--gl); right: var(--gr); width: auto; height: 56%; bottom: calc(var(--bot) + 12px); transform: translateY(calc(100% + 40px)); }
+  .chat.tall { height: 74%; }
+  .tabs button { padding: 6px 7px; font-size: 12px; }
   .hint { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .chat, .bubble { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .chat, .bubble { transition: none; } form.send .mic.rec, .typing .txt i { animation: none; } }
 </style>
 
 <script>document.documentElement.dir = "rtl"; document.documentElement.lang = "ar";</script>
@@ -139,10 +185,11 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-office" aria-selected="true">المكتب</button>
     <button role="tab" id="tab-hive" aria-selected="false">الخلية</button>
+    <button role="tab" id="tab-meet" aria-selected="false">اجتماع</button>
     <button role="tab" id="tab-output" aria-selected="false">المخرجات</button>
   </div>
   <div class="stats">
-    <span><i class="dot"></i> <b id="st-working">5</b><span class="opt"> يعمل</span></span>
+    <span class="opt"><i class="dot"></i> <b id="st-working">5</b> يعمل</span>
     <span class="opt"><b id="st-tasks">216</b> مهمة اليوم</span>
     <span class="opt" id="st-clock">09:41</span>
     <button class="iconbtn" id="replay" title="إعادة بناء المكتب" aria-label="إعادة بناء المكتب">
@@ -152,16 +199,23 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
 </div>
 
 <aside class="team glass" aria-label="فريقك">
-  <h2 id="team-title">فريقك</h2>
+  <h2><span id="team-title">فريقك</span><span class="save off" id="save-state"></span></h2>
   <ul id="team"></ul>
   <ul class="log" id="log" hidden></ul>
 </aside>
 
+<!-- agent chat -->
 <section class="chat glass" id="chat" aria-label="محادثة الوكيل">
   <header>
     <div class="ava" id="chat-ava"><i></i></div>
     <div class="who"><b id="chat-name">سيج</b><span id="chat-role">قائد الدعم · متصل</span></div>
     <span class="mode" id="ai-mode">Claude</span>
+    <button class="iconbtn" id="tts-toggle" aria-pressed="false" title="قراءة الردود بصوت مسموع" aria-label="قراءة الردود بصوت مسموع" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+    <button class="iconbtn" id="chat-clear" title="مسح المحادثة" aria-label="مسح المحادثة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+    </button>
     <button class="iconbtn" id="chat-close" aria-label="إغلاق المحادثة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
@@ -170,7 +224,47 @@ form.send button.stop::after { content: ""; width: 11px; height: 11px; border-ra
   <div class="chips" id="chips"></div>
   <form class="send" id="send">
     <input id="msg-input" autocomplete="off" placeholder="اكتب رسالة لوكيلك">
+    <button type="button" class="mic" id="mic" aria-label="تحدّث بدل الكتابة" title="تحدّث بدل الكتابة" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
     <button type="submit" id="send-btn" aria-label="إرسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+  </form>
+</section>
+
+<!-- team meeting -->
+<section class="chat glass tall" id="meet" aria-label="اجتماع الفريق">
+  <header>
+    <div class="ava" style="--c:#9d7bff"><i></i></div>
+    <div class="who"><b>اجتماع الفريق</b><span>كل الوكلاء يناقشون مهمة واحدة</span></div>
+    <button class="iconbtn" id="meet-close" aria-label="إغلاق الاجتماع">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="pane" id="meet-pane"></div>
+</section>
+
+<!-- new agent -->
+<section class="chat glass tall" id="new" aria-label="وكيل جديد">
+  <header>
+    <div class="ava" id="new-ava" style="--c:#22d3ee"><i></i></div>
+    <div class="who"><b>وكيل جديد</b><span>يظهر روبوت جديد على مكتب في المشهد</span></div>
+    <button class="iconbtn" id="new-close" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <form class="pane" id="new-form">
+    <label class="field">الاسم<input id="new-name" maxlength="16" required placeholder="مثلاً: ريم"></label>
+    <label class="field">التخصص<input id="new-role" maxlength="30" required placeholder="مثلاً: مسوّقة محتوى"></label>
+    <label class="field">ماذا يعمل؟ (اختياري)<textarea id="new-desc" rows="3" maxlength="240" placeholder="مثلاً: تكتب منشورات إنستغرام وتخطط لحملات المتجر الشهرية"></textarea></label>
+    <div class="field">الجنس
+      <div class="seg">
+        <label><input type="radio" name="new-gender" id="new-gender-f" value="f" checked><span>أنثى</span></label>
+        <label><input type="radio" name="new-gender" id="new-gender-m" value="m"><span>ذكر</span></label>
+      </div>
+    </div>
+    <div class="field">اللون<div class="swatches" id="new-colors"></div></div>
+    <div class="status" id="new-status"></div>
+    <div class="row"><button type="submit" class="btn primary" id="new-submit">أضف إلى المكتب</button></div>
   </form>
 </section>
 
@@ -199,41 +293,45 @@ const D = s => (REDUCED ? 0.001 : s);          // duration helper
 const $ = id => document.getElementById(id);
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* ------------------------------------------------------------------ data */
-const AGENTS = [
-  { name: 'ميرا', role: 'محللة أبحاث', color: '#ff8a3d', working: true,
+const BUILTIN = [
+  { key: 'mira', name: 'ميرا', role: 'محللة أبحاث', color: '#ff8a3d', gender: 'f', voice: 'airy', working: true,
     tasks: ['أقرأ 12 ورقة بحثية', 'أقارن 5 موردين', 'أكتب ملخص السوق'],
     intro: 'ميرا للأبحاث. أقرأ الأوراق والتقارير ومواقع المنافسين، ثم أسلّمك ملخصاً قصيراً مع المصادر.',
-    chips: { 'لخّص هذا الأسبوع': 'ثلاثة أمور تغيّرت هذا الأسبوع: منافسان خفّضا أسعارهما، وقانون أوروبي جديد يبدأ في مارس، والبحث عن مجالنا ارتفع 14%. الملخص الكامل في المخرجات.',
-             'اعثر على 3 منافسين': 'بدأت. القائمة حتى الآن: برايت ديسك ولوب وايز وباليت. سأضيف الأسعار وحجم الفريق لكل منها.' } },
-  { name: 'أوتو', role: 'مراجع الكود', color: '#4d7cff', working: true,
+    chips: { 'لخّصي هذا الأسبوع': 'ثلاثة أمور تغيّرت هذا الأسبوع: منافسان خفّضا أسعارهما، وقانون أوروبي جديد يبدأ في مارس، والبحث عن مجالنا ارتفع 14%. الملخص الكامل في المخرجات.',
+             'اعثري على 3 منافسين': 'بدأت. القائمة حتى الآن: برايت ديسك ولوب وايز وباليت. سأضيف الأسعار وحجم الفريق لكل منها.' } },
+  { key: 'otto', name: 'أوتو', role: 'مراجع الكود', color: '#4d7cff', gender: 'm', voice: 'rounded', working: true,
     tasks: ['أراجع طلب الدمج #482', 'أشغّل الاختبارات', 'وجدت تراجعين في الأداء'],
     intro: 'أوتو لمراجعة الكود. أقرأ كل طلب دمج وأشغّل الاختبارات وأترك ملاحظاتي قبل أي دمج.',
     chips: { 'ما الذي يمنع الدمج؟': 'الطلب #482 فيه اختبار فاشل في صفحة الدفع، وفحص قيمة فارغة ناقص في خدمة السلة. كل ما عدا ذلك سليم.',
              'راجع آخر طلب لي': 'سحبته. المنطق سليم. تركت 3 ملاحظات: تسمية متغير، واستيراد غير مستخدم، وحالة تسابق تستحق الإصلاح.' } },
-  { name: 'نوفا', role: 'مصممة المنتج', color: '#b06bff', working: true,
+  { key: 'nova', name: 'نوفا', role: 'مصممة المنتج', color: '#b06bff', gender: 'f', voice: 'glassy', working: true,
     tasks: ['أرسم شاشات الترحيب', 'أصدّر 8 أيقونات', 'أرتّب دليل التصميم'],
     intro: 'نوفا للتصميم. أرسم مسارات الاستخدام وأرتّب دليل التصميم وأصدّر الملفات للفريق.',
     chips: { 'اعرضي أفكار الترحيب': 'عندي اتجاهان: قائمة من 3 خطوات، أو جولة إرشادية تبدأ ببيانات تجريبية. أفضّل الثانية.',
              'صدّري أيقونات التطبيق': 'أصدّر 8 مقاسات الآن من 16 إلى 1024 بكسل. ستظهر في المخرجات خلال دقيقة.' } },
-  { name: 'سيج', role: 'قائد الدعم', color: '#2fe08a', working: true,
+  { key: 'sage', name: 'سيج', role: 'قائد الدعم', color: '#2fe08a', gender: 'm', voice: 'buttery', working: true,
     tasks: ['أفرز 17 تذكرة', 'أكتب رد استرداد', 'أعلّم الرسائل العاجلة'],
     intro: 'سيج للدعم. أفرز التذاكر وأكتب الردود وأنبّهك لأي عميل غاضب أو طلب عاجل.',
     chips: { 'هل توجد تذاكر عاجلة؟': 'اثنتان. عميل خُصم منه مرتين على الطلب #7731، وبلاغ عن تعطل تسجيل الدخول من فريق من 40 شخصاً. ثبّتهما في الأعلى.',
              'اكتب رد استرداد': 'المسودة جاهزة: «نعتذر عن الخصم المكرر. أعدنا 48 دولاراً إلى بطاقتك اليوم، وقد يستغرق ظهورها من 3 إلى 5 أيام.» هل أرسلها؟' } },
-  { name: 'بيب', role: 'المساعد المالي', color: '#ffc53d', working: false,
+  { key: 'pip', name: 'بيب', role: 'المساعد المالي', color: '#ffc53d', gender: 'm', voice: 'rounded', working: false,
     tasks: ['أطابق الفواتير', 'أصنّف 40 مصروفاً', 'أراجع الرواتب'],
     intro: 'بيب للمالية. أطابق الفواتير وأصنّف المصاريف وأنبّهك قبل تأخر أي فاتورة. أنا خامل الآن.',
     chips: { 'طابق الفواتير': 'استيقظت. لدينا 23 فاتورة هذا الشهر، 21 منها تطابق كشف البنك. فاتورتان من أكمي مفقودتان وسأتابعهما.',
              'كم صرفنا هذا الشهر؟': 'مصروف نوفمبر 18,420 دولاراً، أقل من الميزانية بنسبة 6%. البرمجيات أكبر بند بـ5,100 دولار.' } },
-  { name: 'جونو', role: 'مخططة العمليات', color: '#ff5c8a', working: true,
+  { key: 'juno', name: 'جونو', role: 'مخططة العمليات', color: '#ff5c8a', gender: 'f', voice: 'airy', working: true,
     tasks: ['أخطط للسبرنت 14', 'أحجز مكالمة مع مورد', 'أحدّث خارطة الطريق'],
     intro: 'جونو للعمليات. أخطط للسبرنتات وأحجز الاجتماعات وأبقي خارطة الطريق محدّثة.',
     chips: { 'خططي للسبرنت القادم': 'مسودة السبرنت 14: تسع مهام بـ31 نقطة، وينتهي في 11 ديسمبر. نبّه أوتو إلى ترحيل بيانات خطِر، فتركت وقتاً احتياطياً.',
              'من عليه ضغط زائد؟': 'سيج يعمل بـ140% من حجم التذاكر المعتاد اليوم. أقترح نقل طابور الاسترداد إلى بيب بعد الظهر.' } },
 ];
-const STATIONS = [[-4, -4.2], [0.6, -4.2], [-4, -0.1], [0.6, -0.1], [-4, 4], [0.6, 4]];
+// desk slots: the six built-in agents, then two free desks for agents the viewer adds
+const SLOTS = [[-4, -4.2], [0.6, -4.2], [-4, -0.1], [0.6, -0.1], [-4, 4], [0.6, 4], [5.2, -4.6], [5.2, 4.6]];
+const NEW_COLORS = ['#22d3ee', '#a3e635', '#f97316', '#f472b6', '#94a3b8', '#e879f9'];
 const CORE_POS = new THREE.Vector3(5.1, 2.3, 0.2);
 const BASE_CORE = new THREE.Color('#9d7bff');
 
@@ -379,71 +477,6 @@ const hitMeshes = [];
 const deskMat = std('#1b2550', { roughness: 0.5 });
 const legMat = std('#0c1230');
 
-AGENTS.forEach((a, i) => {
-  const [x, z] = STATIONS[i];
-  const col = new THREE.Color(a.color);
-  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
-
-  // desk
-  const desk = new THREE.Group(); g.add(desk);
-  mesh(new RoundedBoxGeometry(2.5, 0.1, 1.2, 2, 0.04), deskMat, 0, 0.8, 0, desk);
-  [[-1.15, -0.5], [1.15, -0.5], [-1.15, 0.5], [1.15, 0.5]].forEach(([lx, lz]) => mesh(new THREE.BoxGeometry(0.06, 0.8, 0.06), legMat, lx, 0.4, lz, desk));
-  // laptop: base + lid facing the robot
-  mesh(new THREE.BoxGeometry(0.8, 0.035, 0.55), std('#cfd6f5', { metalness: 0.5, roughness: 0.3 }), 0, 0.87, -0.05, desk);
-  const lid = new THREE.Group(); lid.position.set(0, 0.885, 0.22); lid.rotation.set(-0.22, Math.PI, 0); desk.add(lid);
-  const tex = screenTexture(a.color);
-  mesh(new THREE.PlaneGeometry(0.74, 0.48), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0, 0.26, 0.012, lid);
-  mesh(new THREE.BoxGeometry(0.8, 0.52, 0.02), std('#cfd6f5', { metalness: 0.5, roughness: 0.3, emissive: col, emissiveIntensity: 0.08 }), 0, 0.26, 0, lid);
-  mesh(new THREE.CircleGeometry(0.05, 20), glow(a.color), 0, 0.28, -0.012, lid).rotation.y = Math.PI;
-  const screenLight = new THREE.PointLight(a.color, 1.2, 2.2, 2); screenLight.position.set(0, 1.25, -0.4); desk.add(screenLight);
-  mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.16, 16), std(i % 2 ? '#ffc53d' : '#e8ecff'), 0.85, 0.93, 0.25, desk); // mug
-  build(desk, 'drop', 0.9 + i * 0.12);
-
-  // chair
-  const chair = new THREE.Group(); chair.position.set(0, 0, -0.95); g.add(chair);
-  mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), legMat, 0, 0.21, 0, chair);
-  mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 20), legMat, 0, 0.02, 0, chair);
-  mesh(new RoundedBoxGeometry(0.85, 0.12, 0.8, 2, 0.05), std('#202a58'), 0, 0.48, 0, chair);
-
-  // robot
-  const robot = new THREE.Group(); robot.position.set(0, 0, -0.95); g.add(robot);
-  const shell = std(a.color, { roughness: 0.35, metalness: 0.25 });
-  const body = mesh(new RoundedBoxGeometry(0.78, 0.78, 0.58, 4, 0.2), shell, 0, 0.95, 0, robot);
-  const headPivot = new THREE.Group(); headPivot.position.set(0, 1.38, 0); robot.add(headPivot);
-  const head = mesh(new RoundedBoxGeometry(0.86, 0.64, 0.66, 4, 0.22), shell, 0, 0.36, 0, headPivot);
-  mesh(new RoundedBoxGeometry(0.66, 0.4, 0.06, 3, 0.1), std('#0a0f24', { roughness: 0.2, metalness: 0.6 }), 0, 0.36, 0.32, headPivot);
-  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#c9f2ff').multiplyScalar(2.2), toneMapped: false });
-  const eyes = [-0.14, 0.14].map(ex => mesh(new THREE.CapsuleGeometry(0.045, 0.06, 4, 10), eyeMat, ex, 0.37, 0.36, headPivot));
-  mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 8), legMat, 0, 0.78, 0, headPivot);
-  const antenna = mesh(new THREE.SphereGeometry(0.06, 14, 12), glow(a.color), 0, 0.9, 0, headPivot);
-  const arms = [-1, 1].map(s => {
-    const pivot = new THREE.Group(); pivot.position.set(0.47 * s, 1.18, 0.05); robot.add(pivot);
-    mesh(new THREE.CapsuleGeometry(0.085, 0.42, 4, 10), shell, 0, -0.26, 0, pivot);
-    return pivot;
-  });
-  build(robot, 'pop', 1.35 + i * 0.1);
-
-  // floor ring
-  const ring = new THREE.Group(); ring.position.set(0, 0.02, -0.45); ring.rotation.x = -Math.PI / 2; g.add(ring);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.8, 64), glow(a.color, 0.07)); ring.add(disc);
-  const outer = new THREE.Mesh(new THREE.RingGeometry(1.66, 1.8, 96), glow(a.color, 0.9)); ring.add(outer);
-  const inner = new THREE.Mesh(new THREE.RingGeometry(1.3, 1.34, 96, 1, 0, Math.PI * 1.4), glow(a.color, 0.45)); ring.add(inner);
-  build(ring, 'ring', 1.2 + i * 0.1);
-
-  // invisible hit box for picking
-  const hit = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.8, 2.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false }));
-  hit.position.set(0, 1.4, -0.45); hit.userData.idx = i; g.add(hit); hitMeshes.push(hit);
-
-  // html label
-  const tag = document.createElement('div');
-  tag.className = 'tag'; tag.style.setProperty('--c', a.color);
-  tag.innerHTML = `<div class="bubble"></div><div class="pill"><span class="dot"></span>${a.name}</div>`;
-  $('labels').appendChild(tag);
-
-  agentGroups.push({ a, i, g, robot, body, headPivot, head, eyes, arms, antenna, ring, outer, inner, disc, tex, screenLight, tag,
-    bubble: tag.querySelector('.bubble'), selA: 0, boost: 0, kick: 0, blinkAt: rand(1, 5), color: col, bubbleTimer: null });
-});
-
 /* --------------------------------------------------------------- hive core */
 const CORE = new THREE.Group(); CORE.position.copy(CORE_POS); world.add(CORE);
 const coreU = {
@@ -475,7 +508,7 @@ CORE.add(coreWire);
 // particle cloud
 const cloud = (() => {
   const N = innerWidth <= 760 ? 1100 : 1800, pos = new Float32Array(N * 3), cols = new Float32Array(N * 3);
-  const palette = AGENTS.map(a => new THREE.Color(a.color)).concat([new THREE.Color('#ffffff'), new THREE.Color('#ffffff')]);
+  const palette = BUILTIN.map(a => new THREE.Color(a.color)).concat([new THREE.Color('#ffffff'), new THREE.Color('#ffffff')]);
   for (let k = 0; k < N; k++) {
     const r = rand(0.95, 1.9) * (Math.random() < 0.12 ? 1.25 : 1), th = Math.random() * Math.PI * 2, ph = Math.acos(rand(-1, 1));
     pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph) * 0.8, r * Math.sin(ph) * Math.sin(th)], k * 3);
@@ -498,17 +531,6 @@ mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.25, 48), std('#141d45', { metalness:
 const padRing = mesh(new THREE.TorusGeometry(1.05, 0.03, 8, 96), glow('#9d7bff', 0.9), 0, 0.26, 0, pedestal); padRing.rotation.x = Math.PI / 2;
 build(pedestal, 'pop', 1.0);
 const coreLight = new THREE.PointLight('#9d7bff', 0, 12, 1.6); coreLight.position.copy(CORE_POS); world.add(coreLight);
-
-// data beams from each desk to the core
-const beams = agentGroups.map(ag => {
-  const from = new THREE.Vector3(ag.g.position.x, 2.4, ag.g.position.z - 0.95);
-  const mid = from.clone().lerp(CORE_POS, 0.5); mid.y += 2.6;
-  const curve = new THREE.QuadraticBezierCurve3(from, mid, CORE_POS.clone());
-  const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(60));
-  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: ag.a.color, dashSize: 0.14, gapSize: 0.14, transparent: true, opacity: 0, toneMapped: false }));
-  line.computeLineDistances(); world.add(line);
-  return { curve, line };
-});
 
 /* --------------------------------------------------------------- effects */
 const bursts = [];
@@ -538,9 +560,9 @@ function flash(color, amount) {
   gsap.fromTo(el, { opacity: Math.min(amount, 1) * 0.55 }, { opacity: 0, duration: D(0.9), ease: 'power2.out' });
 }
 const kick = strength => gsap.fromTo(V, { shake: strength }, { shake: 0, duration: D(0.6), ease: 'power2.out' });
-const boost = (k, amp, dur) => gsap.fromTo(agentGroups[k], { boost: amp }, { boost: 0, duration: D(dur), ease: 'power2.out' });
+const boost = (ag, amp, dur) => gsap.fromTo(ag, { boost: amp }, { boost: 0, duration: D(dur), ease: 'power2.out' });
 
-function stormEvent(i, color, strength = 1) {
+function stormEvent(ag, color, strength = 1) {
   const c = new THREE.Color(color);
   coreU.uA.value.copy(c); coreLight.color.copy(c);
   gsap.fromTo(V, { storm: strength }, { storm: 0, duration: D(2.2), ease: 'power3.out' });
@@ -548,13 +570,14 @@ function stormEvent(i, color, strength = 1) {
   flash(color, 0.6 * strength); kick(0.7 * strength);
   burst(CORE, color, 90, 6, 2.2, 0.15); burst(CORE, '#ffffff', 30, 3.5, 1.6, 0.1);
   ring3d(CORE, color, 8, 1.5, 0.35); gsap.delayedCall(D(0.18), () => ring3d(CORE, '#ffffff', 5, 1.3, 0.25));
-  if (i >= 0) { const ag = agentGroups[i]; ring3d(ag.ring, color, 3.2, 1.2, 0.4); boost(i, 1.2, 1.6); }
-  else for (let k = 0; k < 6; k++) boost(k, 1.2, 1.6);
+  if (ag) { ring3d(ag.ring, color, 3.2, 1.2, 0.4); boost(ag, 1.2, 1.6); }
+  else agentGroups.forEach(o => boost(o, 1.2, 1.6));
 }
 
 /* a glowing packet travels along the beam from a desk to the core */
-function sendPulse(i) {
-  const ag = agentGroups[i], { curve, line } = beams[i];
+function sendPulse(ag) {
+  if (!ag.beam) return;
+  const { curve, line } = ag.beam;
   const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), glow(ag.a.color, 1)); scene.add(dot);
   const s = { t: 0 };
   gsap.to(line.material, { opacity: 0.8, duration: D(0.2), yoyo: true, repeat: 1, repeatDelay: D(0.7) });
@@ -570,6 +593,106 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
+/* --------------------------------------------------------------- stations */
+let built = false;
+const isFemale = a => a.gender === 'f';
+const idxOf = ag => agentGroups.indexOf(ag);
+const byKey = key => agentGroups.find(o => o.a.key === key);
+const freeSlot = () => SLOTS.findIndex((_, s) => !agentGroups.some(o => o.a.slot === s));
+
+function animateIn(tl, obj, kind, at) {
+  const h = obj.userData.home, s = obj.userData.scaleHome;
+  if (kind === 'drop') tl.fromTo(obj.position, { y: h.y + 7 }, { y: h.y, duration: D(0.8), ease: 'bounce.out' }, at);
+  else if (kind === 'pop') tl.fromTo(obj.scale, { x: 0.001, y: 0.001, z: 0.001 }, { x: s.x, y: s.y, z: s.z, duration: D(0.6), ease: 'back.out(2.2)' }, at);
+  else if (kind === 'ring') tl.fromTo(obj.scale, { x: 0.001, y: 0.001 }, { x: 1, y: 1, duration: D(0.9), ease: 'expo.out' }, at);
+}
+
+function makeStation(a, live = false) {
+  const slot = a.slot, [x, z] = SLOTS[slot];
+  const col = new THREE.Color(a.color);
+  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
+
+  const desk = new THREE.Group(); g.add(desk);
+  mesh(new RoundedBoxGeometry(2.5, 0.1, 1.2, 2, 0.04), deskMat, 0, 0.8, 0, desk);
+  [[-1.15, -0.5], [1.15, -0.5], [-1.15, 0.5], [1.15, 0.5]].forEach(([lx, lz]) => mesh(new THREE.BoxGeometry(0.06, 0.8, 0.06), legMat, lx, 0.4, lz, desk));
+  mesh(new THREE.BoxGeometry(0.8, 0.035, 0.55), std('#cfd6f5', { metalness: 0.5, roughness: 0.3 }), 0, 0.87, -0.05, desk);
+  const lid = new THREE.Group(); lid.position.set(0, 0.885, 0.22); lid.rotation.set(-0.22, Math.PI, 0); desk.add(lid);
+  const tex = screenTexture(a.color);
+  mesh(new THREE.PlaneGeometry(0.74, 0.48), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0, 0.26, 0.012, lid);
+  mesh(new THREE.BoxGeometry(0.8, 0.52, 0.02), std('#cfd6f5', { metalness: 0.5, roughness: 0.3, emissive: col, emissiveIntensity: 0.08 }), 0, 0.26, 0, lid);
+  mesh(new THREE.CircleGeometry(0.05, 20), glow(a.color), 0, 0.28, -0.012, lid).rotation.y = Math.PI;
+  const screenLight = new THREE.PointLight(a.color, 1.2, 2.2, 2); screenLight.position.set(0, 1.25, -0.4); desk.add(screenLight);
+  mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.16, 16), std(slot % 2 ? '#ffc53d' : '#e8ecff'), 0.85, 0.93, 0.25, desk);
+
+  const chair = new THREE.Group(); chair.position.set(0, 0, -0.95); g.add(chair);
+  mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), legMat, 0, 0.21, 0, chair);
+  mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 20), legMat, 0, 0.02, 0, chair);
+  mesh(new RoundedBoxGeometry(0.85, 0.12, 0.8, 2, 0.05), std('#202a58'), 0, 0.48, 0, chair);
+
+  const robot = new THREE.Group(); robot.position.set(0, 0, -0.95); g.add(robot);
+  const shell = std(a.color, { roughness: 0.35, metalness: 0.25 });
+  mesh(new RoundedBoxGeometry(0.78, 0.78, 0.58, 4, 0.2), shell, 0, 0.95, 0, robot);
+  const headPivot = new THREE.Group(); headPivot.position.set(0, 1.38, 0); robot.add(headPivot);
+  mesh(new RoundedBoxGeometry(0.86, 0.64, 0.66, 4, 0.22), shell, 0, 0.36, 0, headPivot);
+  mesh(new RoundedBoxGeometry(0.66, 0.4, 0.06, 3, 0.1), std('#0a0f24', { roughness: 0.2, metalness: 0.6 }), 0, 0.36, 0.32, headPivot);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#c9f2ff').multiplyScalar(2.2), toneMapped: false });
+  const eyes = [-0.14, 0.14].map(ex => mesh(new THREE.CapsuleGeometry(0.045, 0.06, 4, 10), eyeMat, ex, 0.37, 0.36, headPivot));
+  mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 8), legMat, 0, 0.78, 0, headPivot);
+  const antenna = mesh(new THREE.SphereGeometry(0.06, 14, 12), glow(a.color), 0, 0.9, 0, headPivot);
+  const arms = [-1, 1].map(s => {
+    const pivot = new THREE.Group(); pivot.position.set(0.47 * s, 1.18, 0.05); robot.add(pivot);
+    mesh(new THREE.CapsuleGeometry(0.085, 0.42, 4, 10), shell, 0, -0.26, 0, pivot);
+    return pivot;
+  });
+
+  const ring = new THREE.Group(); ring.position.set(0, 0.02, -0.45); ring.rotation.x = -Math.PI / 2; g.add(ring);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.8, 64), glow(a.color, 0.07)); ring.add(disc);
+  const outer = new THREE.Mesh(new THREE.RingGeometry(1.66, 1.8, 96), glow(a.color, 0.9)); ring.add(outer);
+  const inner = new THREE.Mesh(new THREE.RingGeometry(1.3, 1.34, 96, 1, 0, Math.PI * 1.4), glow(a.color, 0.45)); ring.add(inner);
+
+  const items = [[desk, 'drop', 0.9 + slot * 0.12], [robot, 'pop', 1.35 + slot * 0.1], [ring, 'ring', 1.2 + slot * 0.1]];
+  items.forEach(([o, k, d]) => build(o, k, d));
+
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.8, 2.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false }));
+  hit.position.set(0, 1.4, -0.45); g.add(hit); hitMeshes.push(hit);
+
+  // beam to the core
+  const from = new THREE.Vector3(x, 2.4, z - 0.95);
+  const mid = from.clone().lerp(CORE_POS, 0.5); mid.y += 2.6;
+  const curve = new THREE.QuadraticBezierCurve3(from, mid, CORE_POS.clone());
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(60)),
+    new THREE.LineDashedMaterial({ color: a.color, dashSize: 0.14, gapSize: 0.14, transparent: true, opacity: built ? 0.22 : 0, toneMapped: false }));
+  line.computeLineDistances(); world.add(line);
+
+  // label (names are set as text, never markup)
+  const tag = el('div', 'tag'); tag.style.setProperty('--c', a.color);
+  const bubbleEl = el('div', 'bubble'); const pill = el('div', 'pill'); pill.append(el('span', 'dot'), document.createTextNode(a.name));
+  tag.append(bubbleEl, pill); $('labels').appendChild(tag);
+
+  const ag = { a, g, robot, headPivot, eyes, arms, antenna, ring, outer, inner, disc, tex, screenLight, tag, hit,
+    bubble: bubbleEl, beam: { curve, line }, buildObjs: items.map(i => i[0]),
+    selA: 0, boost: 0, kick: 0, blinkAt: rand(1, 5), bubbleTimer: null };
+  hit.userData.ag = ag;
+  agentGroups.push(ag);
+
+  if (live) {
+    const tl = gsap.timeline();
+    animateIn(tl, desk, 'drop', 0); animateIn(tl, ring, 'ring', 0.3); animateIn(tl, robot, 'pop', 0.55);
+    tl.call(() => { ring3d(ring, a.color, 3.2, 1.2, 0.4); burst(ring, a.color, 60, 4, 1.6, 0.12); sendPulse(ag); }, null, 0.9);
+  }
+  return ag;
+}
+
+function removeStation(ag) {
+  world.remove(ag.g); world.remove(ag.beam.line); ag.tag.remove();
+  hitMeshes.splice(hitMeshes.indexOf(ag.hit), 1);
+  for (let k = BUILD.length - 1; k >= 0; k--) if (ag.buildObjs.includes(BUILD[k].obj)) BUILD.splice(k, 1);
+  agentGroups.splice(idxOf(ag), 1);
+  ag.g.traverse(o => { o.geometry?.dispose(); });
+}
+
+BUILTIN.forEach((b, s) => makeStation({ ...b, slot: s, custom: false, history: [] }));
+
 /* --------------------------------------------------------------- layout */
 let VIEW = 15;
 const isPhone = () => innerWidth <= 760;
@@ -582,68 +705,108 @@ function resize() {
 function updateProjection() {
   const aspect = innerWidth / innerHeight, halfH = VIEW / 2, halfW = halfH * aspect;
   const worldPerPx = (2 * halfH) / innerHeight / camera.zoom;
-  // shift the view so the focused robot stays visible beside the chat panel
+  // shift the view so the focus stays visible beside the open panel
   let sx = 0, sy = 0;
-  if (isPhone()) sy = -V.shift * (innerHeight * 0.56) / 2 * worldPerPx;
+  const sheet = panel && panel !== 'chat' ? 0.74 : 0.56;
+  if (isPhone()) sy = -V.shift * (innerHeight * sheet) / 2 * worldPerPx;
   else sx = -V.shift * (346 / 2) * worldPerPx;
   camera.left = -halfW + sx; camera.right = halfW + sx; camera.top = halfH + sy; camera.bottom = -halfH + sy;
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
 
-/* --------------------------------------------------------------- UI */
+/* --------------------------------------------------------------- panels + selection */
+let panel = null;      // 'chat' | 'meet' | 'new' | null
+let focused = null;    // agent group whose chat is open
+let speaker = null;    // agent group currently talking in a meeting
+
+function focusOn(p, zoom) {
+  const off = camera.position.clone().sub(controls.target);
+  gsap.to(controls.target, { x: p.x, y: p.y, z: p.z, duration: D(1.1), ease: 'power3.inOut', onUpdate: () => camera.position.copy(controls.target).add(off) });
+  gsap.to(camera, { zoom, duration: D(1.1), ease: 'power3.inOut' });
+}
+function showPanel(name) {
+  if (panel === 'chat' && name !== 'chat') { ctl?.abort(); stopVoice(); }
+  ['chat', 'meet', 'new'].forEach(p => $(p).classList.toggle('open', p === name));
+  panel = name;
+  gsap.to(V, { shift: name ? 1 : 0, duration: D(1), ease: 'power3.inOut' });
+}
+function setTabState(name) {
+  ['office', 'hive', 'meet', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
+  const out = name === 'output';
+  teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
+}
+function onSelect(ag) {
+  if (ag && meeting.running) return;
+  agentGroups.forEach(o => gsap.to(o, { selA: o === ag ? 1 : 0, duration: D(0.5) }));
+  focused = ag;
+  if (ag) {
+    setTabState('office');
+    const p = ag.g.position;
+    focusOn(new THREE.Vector3(p.x, 1.2, p.z - 0.5), isPhone() ? 1.9 : 1.6);
+    showPanel('chat'); openChat(ag);
+    ring3d(ag.ring, ag.a.color, 2.6, 1, 0.4); boost(ag, 1, 1.2);
+  } else {
+    focusOn(new THREE.Vector3(0, 0.5, 0), 1);
+    if (panel === 'chat') showPanel(null);
+  }
+  refreshTeam();
+}
+function setTab(name) {
+  if (meeting.running && name !== 'meet') return;
+  setTabState(name);
+  if (name === 'office') { onSelect(null); showPanel(null); }
+  if (name === 'hive') { onSelect(null); showPanel(null); focusOn(CORE_POS, isPhone() ? 1.25 : 1.5); }
+  if (name === 'output') { onSelect(null); }
+  if (name === 'meet') { onSelect(null); showPanel('meet'); if (!meeting.running) renderMeetHome(); focusOn(new THREE.Vector3(0.8, 0.5, 0), isPhone() ? 0.95 : 1); }
+}
+$('tab-office').onclick = () => setTab('office');
+$('tab-hive').onclick = () => setTab('hive');
+$('tab-meet').onclick = () => setTab('meet');
+$('tab-output').onclick = () => setTab('output');
+$('replay').onclick = () => { if (!meeting.running) { onSelect(null); runBuild(); } };
+
+/* --------------------------------------------------------------- team list */
 const teamEl = $('team');
-AGENTS.forEach((a, i) => {
-  const li = document.createElement('li');
-  li.innerHTML = `<button class="member" style="--c:${a.color}" aria-pressed="false" data-i="${i}">
-    <span class="ava"><i></i></span>
-    <span class="who"><b>${a.name}</b><span>${a.role}</span></span>
-    <span class="badge${a.working ? '' : ' idle'}">${a.working ? 'يعمل' : 'خامل'}</span></button>`;
-  li.firstElementChild.addEventListener('click', () => onSelect(focusIdx === i ? -1 : i));
-  teamEl.appendChild(li);
-});
+function renderTeam() {
+  teamEl.replaceChildren();
+  agentGroups.forEach(ag => {
+    const a = ag.a, li = el('li'), b = el('button', 'member');
+    b.style.setProperty('--c', a.color); b.setAttribute('aria-pressed', 'false');
+    const ava = el('span', 'ava'); ava.append(el('i'));
+    const who = el('span', 'who'); who.append(el('b', '', a.name), el('span', '', a.role));
+    b.append(ava, who, el('span', 'badge'));
+    b.onclick = () => onSelect(focused === ag ? null : ag);
+    ag.memberBtn = b; li.append(b); teamEl.append(li);
+  });
+  const li = el('li'), add = el('button', 'member add', '+ وكيل جديد');
+  add.id = 'add-agent'; add.onclick = openNew; li.append(add); teamEl.append(li);
+  refreshTeam();
+}
 function refreshTeam() {
-  teamEl.querySelectorAll('.member').forEach((b, i) => {
-    b.setAttribute('aria-pressed', String(i === focusIdx));
-    const badge = b.querySelector('.badge'); const w = AGENTS[i].working;
+  agentGroups.forEach(ag => {
+    const b = ag.memberBtn; if (!b) return;
+    b.setAttribute('aria-pressed', String(ag === focused));
+    const badge = b.querySelector('.badge'), w = ag.a.working;
     badge.textContent = w ? 'يعمل' : 'خامل'; badge.classList.toggle('idle', !w);
   });
-  $('st-working').textContent = AGENTS.filter(a => a.working).length;
+  $('st-working').textContent = agentGroups.filter(o => o.a.working).length;
+  const add = $('add-agent');
+  if (add) { const full = freeSlot() < 0; add.disabled = full; add.textContent = full ? 'المكتب ممتلئ' : '+ وكيل جديد'; }
 }
 
 let tasks = 216;
 const logEl = $('log');
-function addLog(i, text) {
-  const li = document.createElement('li'); li.style.setProperty('--c', AGENTS[i].color);
-  li.innerHTML = `<time>${clock()} · ${AGENTS[i].name}</time>`; li.append(text);
-  logEl.prepend(li); while (logEl.children.length > 30) logEl.lastChild.remove();
-}
 const clock = () => new Date().toTimeString().slice(0, 5);
+function addLog(ag, text) {
+  const li = el('li'); li.style.setProperty('--c', ag.a.color);
+  li.append(el('time', '', `${clock()} · ${ag.a.name}`), document.createTextNode(text));
+  logEl.prepend(li); while (logEl.children.length > 40) logEl.lastChild.remove();
+}
 setInterval(() => { $('st-clock').textContent = clock(); }, 1000); $('st-clock').textContent = clock();
 
-function setTab(name) {
-  ['office', 'hive', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
-  const out = name === 'output';
-  teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
-  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, isPhone() ? 1.25 : 1.5); }
-  if (name === 'office') { onSelect(-1); }
-}
-$('tab-office').onclick = () => setTab('office');
-$('tab-hive').onclick = () => setTab('hive');
-$('tab-output').onclick = () => setTab('output');
-$('replay').onclick = () => { onSelect(-1); runBuild(); };
-
-/* chat */
-const msgs = $('msgs');
-function say(text, me = false) {
-  const d = document.createElement('div'); d.className = 'msg' + (me ? ' me' : ''); d.textContent = text;
-  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
-}
-/* ---- real AI: each agent answers through Claude (the page's "sample" capability) ---- */
-const FEMALE = new Set([0, 2, 5]); // ميرا، نوفا، جونو
-const history = AGENTS.map(() => []); // per-agent conversation kept by the page
+/* --------------------------------------------------------------- Claude (sample) */
 let sample = null, aiOff = false, ctl = null, busy = false;
-if (window.claude?.use) window.claude.use('sample').then(fn => { sample = fn; updateMode(); }).catch(() => {});
 const aiReady = () => !!sample && !aiOff;
 function updateMode() {
   const m = $('ai-mode');
@@ -651,50 +814,6 @@ function updateMode() {
   m.classList.toggle('off', !aiReady());
   m.title = aiReady() ? 'الردود يكتبها Claude الآن' : 'الذكاء الاصطناعي غير متاح هنا، والردود مكتوبة مسبقاً';
 }
-updateMode();
-
-function persona(i) {
-  const a = AGENTS[i];
-  const team = AGENTS.map(x => `${x.name} (${x.role})`).join('، ');
-  return `أنت ${a.name}، ${a.role} في «خلية المكتب»، وهو مكتب افتراضي يعمل فيه ستة وكلاء ذكاء اصطناعي: ${team}.
-تعريفك بنفسك: ${a.intro}
-مهامك هذه الأيام: ${a.tasks.join('، ')}.
-قواعد الرد:
-- ${FEMALE.has(i) ? 'تحدّثي بصيغة المؤنث.' : 'تحدّث بصيغة المذكر.'}
-- اكتب بالعربية البسيطة، وإذا كتب المستخدم بلغة أخرى فرُدّ بلغته.
-- فكّر في الطلب بعمق قبل أن تجيب: حلّل السبب، واذكر الافتراضات والمخاطر، وقدّم توصية واضحة وخطوات عملية مع أمثلة أو أرقام تقديرية عند الحاجة.
-- اجعل الرد مركّزاً، في حدود فقرتين إلى أربع فقرات قصيرة. اكتب نصاً عادياً بلا Markdown ولا عناوين ولا رموز تنسيق، ويمكنك ترقيم الخطوات بأسطر تبدأ بـ 1. و2. و3.
-- ابقَ في شخصيتك وتخصصك. إذا كان الطلب خارج تخصصك فساعد باختصار واقترح الزميل المناسب باسمه.
-- لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذه المحادثة، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف. يمكنك كتابة مسودات وخطط وأفكار وتحليلات.`;
-}
-
-function openChat(i) {
-  const a = AGENTS[i];
-  ctl?.abort();
-  const chat = $('chat'); chat.style.setProperty('--c', a.color);
-  $('chat-ava').style.setProperty('--c', a.color);
-  $('chat-name').textContent = a.name;
-  $('chat-role').textContent = `${a.role} · ${a.working ? 'متصل' : 'خامل'}`;
-  msgs.replaceChildren(); say(a.intro);
-  history[i].forEach(t => say(t.content, t.role === 'user'));
-  const chips = $('chips'); chips.replaceChildren(); chips.style.setProperty('--c', a.color);
-  Object.keys(a.chips).forEach(q => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
-  chat.classList.add('open');
-}
-function closeChat() { ctl?.abort(); $('chat').classList.remove('open'); }
-$('chat-close').onclick = () => onSelect(-1);
-$('send').addEventListener('submit', e => {
-  e.preventDefault();
-  if (busy) { ctl?.abort(); return; }
-  const v = $('msg-input').value.trim(); if (v) { ask(v); $('msg-input').value = ''; }
-});
-function setBusy(b) {
-  busy = b;
-  $('send-btn').setAttribute('aria-label', b ? 'إيقاف' : 'إرسال');
-  $('send-btn').classList.toggle('stop', b);
-  $('chips').querySelectorAll('button').forEach(x => { x.disabled = b; });
-}
-
 const ERR = {
   not_granted: 'لم يُسمح للصفحة باستخدام Claude، فسأرد بردود تجريبية.',
   sampling_disabled: 'استخدام Claude معطّل في هذا الحساب، فسأرد بردود تجريبية.',
@@ -704,99 +823,495 @@ const ERR = {
   rate_limited: 'وصلنا إلى حد الطلبات مؤقتاً. انتظر قليلاً ثم أعد المحاولة.',
   session_expired: 'انتهت الجلسة. حدّث الصفحة ثم أعد المحاولة.',
   refused: 'لا أستطيع المساعدة في هذا الطلب.',
-  prompt_too_large: 'المحادثة طويلة جداً. أغلقها وابدأ من جديد.',
+  prompt_too_large: 'المحادثة طويلة جداً. امسحها وابدأ من جديد.',
+  invalid_json: 'جاء الرد بشكل غير مفهوم. أعد المحاولة.',
 };
 const FATAL = new Set(['not_granted', 'sampling_disabled', 'capability_disabled', 'capability_removed', 'not_declared']);
+const errText = e => ERR[e?.code] || 'تعذّر الحصول على رد الآن. أعد المحاولة بعد قليل.';
+function noteFatal(e) { if (FATAL.has(e?.code)) { aiOff = true; updateMode(); } }
 
-function celebrate(i, reply) {
-  const a = AGENTS[i];
-  if (!a.working) { a.working = true; refreshTeam(); if (focusIdx === i) $('chat-role').textContent = `${a.role} · متصل`; }
-  sendPulse(i);
-  gsap.delayedCall(D(1.1), () => stormEvent(i, a.color, 0.7));
+function teamLine() { return agentGroups.map(o => `${o.a.name} (${o.a.role})`).join('، '); }
+function persona(ag) {
+  const a = ag.a, f = isFemale(a);
+  return `أنت ${a.name}، ${a.role} في «خلية المكتب»، وهو مكتب افتراضي يعمل فيه فريق من وكلاء الذكاء الاصطناعي: ${teamLine()}.
+تعريفك بنفسك: ${a.intro}${a.desc ? `\nوصف عملك كما كتبه المستخدم: ${a.desc}` : ''}
+مهامك هذه الأيام: ${a.tasks.join('، ')}.
+قواعد الرد:
+- ${f ? 'تحدّثي بصيغة المؤنث.' : 'تحدّث بصيغة المذكر.'}
+- اكتب بالعربية البسيطة، وإذا كتب المستخدم بلغة أخرى فرُدّ بلغته.
+- فكّر في الطلب بعمق قبل أن تجيب: حلّل السبب، واذكر الافتراضات والمخاطر، وقدّم توصية واضحة وخطوات عملية مع أمثلة أو أرقام تقديرية عند الحاجة.
+- اجعل الرد مركّزاً، في حدود فقرتين إلى أربع فقرات قصيرة. اكتب نصاً عادياً بلا Markdown ولا عناوين ولا رموز تنسيق، ويمكنك ترقيم الخطوات بأسطر تبدأ بـ 1. و2. و3.
+- ابقَ في شخصيتك وتخصصك. إذا كان الطلب خارج تخصصك فساعد باختصار واقترح الزميل المناسب باسمه.
+- لا تدّعِ أنك نفّذت شيئاً حقيقياً خارج هذه المحادثة، مثل إرسال بريد أو الدخول إلى نظام أو قراءة ملف. يمكنك كتابة مسودات وخطط وأفكار وتحليلات.`;
+}
+
+/* --------------------------------------------------------------- voice: speech out + dictation in */
+let tts = null, autoRead = false;
+const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+try { autoRead = localStorage.getItem('deskhive:autoRead') === '1'; } catch {}
+const canSpeak = () => !!tts || !!synth;
+function updateVoiceUI() {
+  const b = $('tts-toggle'); b.hidden = !canSpeak(); b.setAttribute('aria-pressed', String(autoRead && canSpeak()));
+  document.querySelectorAll('.play').forEach(p => { p.hidden = !canSpeak(); });
+}
+$('tts-toggle').onclick = () => {
+  autoRead = !autoRead; try { localStorage.setItem('deskhive:autoRead', autoRead ? '1' : '0'); } catch {}
+  updateVoiceUI(); if (!autoRead) stopVoice();
+};
+function stopVoice() { try { tts?.stop().catch(() => {}); } catch {} try { synth?.cancel(); } catch {} }
+async function speakLines(lines) { // lines: [{text, voice}]
+  const clean = lines.filter(l => l.text && l.text.trim()).map(l => ({ text: l.text.slice(0, 2000), voice: l.voice || 'buttery' }));
+  if (!clean.length) return;
+  stopVoice();
+  if (tts) {
+    try { await tts.speak(clean); return; }
+    catch (e) {
+      if (e?.code === 'not_granted' || e?.code === 'unavailable') { tts = null; updateVoiceUI(); }
+      else return;
+    }
+  }
+  if (synth) clean.forEach(l => { const u = new SpeechSynthesisUtterance(l.text); u.lang = 'ar-SA'; synth.speak(u); });
+}
+function playButton(getText, voice) {
+  const b = el('button', 'play', '▶ استمع'); b.type = 'button'; b.hidden = !canSpeak();
+  b.onclick = () => speakLines([{ text: getText(), voice }]);
+  return b;
+}
+
+let dict = null, dictBase = '', listening = false;
+$('mic').onclick = () => {
+  if (!dict) return;
+  if (listening) { dict.stop().catch(() => {}); return; }
+  dictBase = $('msg-input').value.trim();
+  dict.start().catch(e => {
+    if (e?.code === 'not_granted' || e?.code === 'unavailable') { $('mic').hidden = true; }
+    if (!['stopped', 'dismissed', 'no_gesture'].includes(e?.code)) note(e?.code === 'not_granted' ? 'لم يُسمح باستخدام الميكروفون.' : 'الإملاء الصوتي غير متاح الآن.');
+  });
+};
+
+/* --------------------------------------------------------------- saving (db, else this browser) */
+const store = { kind: 'none', db: null, base: '' };
+const LS = 'deskhive:';
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(LS + k)); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch {} };
+const withTimeout = (p, ms = 10000) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
+function saveState(text, ok = true) { const s = $('save-state'); s.textContent = text; s.classList.toggle('off', !ok); }
+
+async function initStore() {
+  if (window.claude?.use) {
+    try {
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      const uid = user ? await user.id() : null;
+      if (db && uid) { store.kind = 'db'; store.db = db; store.base = `data/users/${uid}`; }
+    } catch {}
+  }
+  if (store.kind === 'none') { try { localStorage.setItem(LS + 'probe', '1'); store.kind = 'local'; } catch {} }
+}
+async function loadSaved() {
+  if (store.kind === 'db') {
+    const col = n => withTimeout(store.db.collection(`${store.base}/${n}`).get());
+    const [ag, ch, mt] = await Promise.all([col('agents'), col('chats'), col('meetings')]);
+    return {
+      agents: ag.docs.map(d => d.data()),
+      chats: Object.fromEntries(ch.docs.map(d => [d.id, d.data()?.turns || []])),
+      meetings: mt.docs.map(d => d.data()),
+    };
+  }
+  if (store.kind === 'local') return { agents: lsGet('agents') || [], chats: lsGet('chats') || {}, meetings: lsGet('meetings') || [] };
+  return null;
+}
+async function persist(fnDb, fnLocal) {
+  try {
+    if (store.kind === 'db') await fnDb();
+    else if (store.kind === 'local') fnLocal();
+    else return;
+    saveState('محفوظ');
+  } catch { saveState('تعذّر الحفظ', false); }
+}
+const saveChat = a => persist(
+  () => store.db.doc(`${store.base}/chats/${a.key}`).set({ turns: a.history.slice(-40), at: Date.now() }),
+  () => { const c = lsGet('chats') || {}; c[a.key] = a.history.slice(-40); lsSet('chats', c); });
+const agentDoc = a => ({ key: a.key, name: a.name, role: a.role, desc: a.desc || '', intro: a.intro, color: a.color, gender: a.gender,
+  voice: a.voice, tasks: a.tasks, questions: Object.keys(a.chips), slot: a.slot, at: Date.now() });
+const saveAgent = a => persist(
+  () => store.db.doc(`${store.base}/agents/${a.key}`).set(agentDoc(a)),
+  () => { const list = (lsGet('agents') || []).filter(x => x.key !== a.key); list.push(agentDoc(a)); lsSet('agents', list); });
+const deleteAgentData = a => persist(
+  async () => { await store.db.doc(`${store.base}/agents/${a.key}`).delete(); await store.db.doc(`${store.base}/chats/${a.key}`).delete(); },
+  () => { lsSet('agents', (lsGet('agents') || []).filter(x => x.key !== a.key)); const c = lsGet('chats') || {}; delete c[a.key]; lsSet('chats', c); });
+const saveMeeting = m => persist(
+  () => store.db.doc(`${store.base}/meetings/${m.id}`).set(m),
+  () => { const list = (lsGet('meetings') || []).filter(x => x.id !== m.id); list.unshift(m); lsSet('meetings', list.slice(0, 12)); });
+
+let pastMeetings = [];
+const okColor = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+const strList = (v, n, max) => Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, max)).slice(0, n) : [];
+
+async function restore() {
+  await initStore();
+  if (store.kind === 'none') { saveState('بدون حفظ', false); return; }
+  let data;
+  try { data = await loadSaved(); } catch { saveState('تعذّر التحميل', false); return; }
+  if (!data) return;
+  for (const d of data.agents || []) {
+    if (!d || typeof d.key !== 'string' || byKey(d.key) || typeof d.name !== 'string') continue;
+    let slot = Number.isInteger(d.slot) && d.slot >= 6 && d.slot < SLOTS.length && !agentGroups.some(o => o.a.slot === d.slot) ? d.slot : freeSlot();
+    if (slot < 0) break;
+    const a = { key: d.key, name: d.name.slice(0, 16), role: String(d.role || '').slice(0, 30), desc: String(d.desc || '').slice(0, 240),
+      intro: String(d.intro || ''), color: okColor(d.color) ? d.color : NEW_COLORS[0], gender: d.gender === 'm' ? 'm' : 'f',
+      voice: ['buttery', 'airy', 'glassy', 'rounded'].includes(d.voice) ? d.voice : 'buttery',
+      tasks: strList(d.tasks, 3, 40), chips: Object.fromEntries(strList(d.questions, 3, 60).map(q => [q, ''])),
+      working: true, custom: true, history: [], slot };
+    if (!a.tasks.length) a.tasks = [`أعمل على ${a.role}`];
+    makeStation(a, true);
+  }
+  for (const [key, turns] of Object.entries(data.chats || {})) {
+    const ag = byKey(key);
+    if (ag && Array.isArray(turns)) ag.a.history = turns.filter(t => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string' && t.content);
+  }
+  pastMeetings = (data.meetings || []).filter(m => m && typeof m.topic === 'string' && Array.isArray(m.lines)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 12);
+  renderTeam();
+  if (focused) openChat(focused);
+  if (panel === 'meet' && !meeting.running) renderMeetHome();
+  saveState(store.kind === 'db' ? 'محفوظ في حسابك' : 'محفوظ في هذا المتصفح');
+}
+
+/* --------------------------------------------------------------- chat */
+const msgs = $('msgs');
+function bubble(text, cls = '') {
+  const d = el('div', 'msg ' + cls); d.append(el('span', 'txt', text));
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+}
+const setTxt = (d, t) => { d.querySelector('.txt').textContent = t; };
+function agentBubble(ag, text) { const d = bubble(text); d.append(playButton(() => d.querySelector('.txt').textContent, ag.a.voice)); return d; }
+function note(text) { return bubble(text, 'note'); }
+
+function openChat(ag) {
+  const a = ag.a;
+  ctl?.abort(); stopVoice(); if (listening) dict?.stop().catch(() => {});
+  const chat = $('chat'); chat.style.setProperty('--c', a.color);
+  $('chat-ava').style.setProperty('--c', a.color);
+  $('chat-name').textContent = a.name;
+  $('chat-role').textContent = `${a.role} · ${a.working ? 'متصل' : 'خامل'}`;
+  msgs.replaceChildren(); agentBubble(ag, a.intro);
+  a.history.forEach(t => t.role === 'user' ? bubble(t.content, 'me') : agentBubble(ag, t.content));
+  const chips = $('chips'); chips.replaceChildren(); chips.style.setProperty('--c', a.color);
+  Object.keys(a.chips).forEach(q => { const b = el('button', '', q); b.type = 'button'; b.onclick = () => ask(q); chips.appendChild(b); });
+  setBusy(false);
+}
+$('chat-close').onclick = () => onSelect(null);
+$('send').addEventListener('submit', e => {
+  e.preventDefault();
+  if (busy) { ctl?.abort(); return; }
+  if (listening) dict?.stop().catch(() => {});
+  const v = $('msg-input').value.trim(); if (v) { ask(v); $('msg-input').value = ''; dictBase = ''; }
+});
+function setBusy(b) {
+  busy = b;
+  $('send-btn').setAttribute('aria-label', b ? 'إيقاف' : 'إرسال');
+  $('send-btn').classList.toggle('stop', b);
+  $('chips').querySelectorAll('button').forEach(x => { x.disabled = b; });
+}
+
+// clear chat / delete agent, confirmed inside the page
+$('chat-clear').onclick = () => {
+  const ag = focused; if (!ag || busy) return;
+  msgs.querySelector('.confirm')?.remove();
+  const bar = el('div', 'confirm');
+  bar.append(el('span', '', ag.a.custom ? `ماذا تريد أن تحذف من ${ag.a.name}؟` : `مسح محادثتك مع ${ag.a.name}؟ لا يمكن التراجع.`));
+  const clear = el('button', 'btn danger', 'مسح المحادثة'); clear.type = 'button';
+  clear.onclick = () => { ag.a.history = []; saveChat(ag.a); openChat(ag); };
+  bar.append(clear);
+  if (ag.a.custom) {
+    const del = el('button', 'btn danger', 'حذف الوكيل'); del.type = 'button';
+    del.onclick = () => { const a = ag.a; onSelect(null); removeStation(ag); deleteAgentData(a); renderTeam(); };
+    bar.append(del);
+  }
+  const cancel = el('button', 'btn', 'إلغاء'); cancel.type = 'button'; cancel.onclick = () => bar.remove();
+  bar.append(cancel);
+  msgs.append(bar); msgs.scrollTop = msgs.scrollHeight;
+};
+
+function celebrate(ag, reply) {
+  const a = ag.a;
+  if (!a.working) { a.working = true; refreshTeam(); if (focused === ag) $('chat-role').textContent = `${a.role} · متصل`; }
+  sendPulse(ag);
+  gsap.delayedCall(D(1.1), () => stormEvent(ag, a.color, 0.7));
   tasks++; $('st-tasks').textContent = tasks;
   const first = reply.split(/(?<=[.!؟?])\s/)[0];
-  addLog(i, first.length > 90 ? first.slice(0, 88) + '…' : first);
+  addLog(ag, first.length > 90 ? first.slice(0, 88) + '…' : first);
 }
 
 async function ask(q) {
-  if (focusIdx < 0 || busy) return;
-  const i = focusIdx, a = AGENTS[i], ag = agentGroups[i];
-  say(q, true);
-  const t = say(''); t.classList.add('typing'); t.innerHTML = '<span></span><span></span><span></span>';
-  ag.kick = 1; showBubble(i, FEMALE.has(i) ? 'تفكّر…' : 'يفكّر…');
+  const ag = focused; if (!ag || busy) return;
+  const a = ag.a, f = isFemale(a);
+  msgs.querySelector('.confirm')?.remove();
+  bubble(q, 'me');
+  const t = bubble('', 'typing'); t.querySelector('.txt').innerHTML = '<i></i><i></i><i></i>';
+  ag.kick = 1; showBubble(ag, f ? 'تفكّر…' : 'يفكّر…');
 
-  if (!aiReady()) { // fallback: canned replies
+  if (!aiReady()) {
     gsap.delayedCall(D(0.9), () => {
-      t.classList.remove('typing');
+      t.remove();
       const reply = a.chips[q] || `تمام. سأعمل على «${q}» وأضع النتيجة في المخرجات عند الانتهاء.`;
-      t.textContent = reply; msgs.scrollTop = msgs.scrollHeight;
-      showBubble(i, pick(a.tasks)); celebrate(i, reply);
+      agentBubble(ag, reply);
+      a.history.push({ role: 'user', content: q }, { role: 'assistant', content: reply }); saveChat(a);
+      showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
+      if (autoRead) speakLines([{ text: reply, voice: a.voice }]);
     });
     return;
   }
 
-  history[i].push({ role: 'user', content: q });
-  const turns = [{ role: 'user', content: persona(i) }, ...history[i].slice(-16)];
+  a.history.push({ role: 'user', content: q });
+  const turns = [{ role: 'user', content: persona(ag) }, ...a.history.slice(-16)];
   ctl = new AbortController(); setBusy(true);
-  let started = false;
+  let out = null;
+  const ensureOut = () => { if (!out) { t.remove(); out = agentBubble(ag, ''); showBubble(ag, f ? 'تكتب…' : 'يكتب…'); } return out; };
   try {
     const { text } = await sample(turns, {
       modelTier: 'complex', cache: false, signal: ctl.signal,
-      onText: ({ text }) => {
-        if (!started) { started = true; t.classList.remove('typing'); showBubble(i, FEMALE.has(i) ? 'تكتب…' : 'يكتب…'); }
-        t.textContent = text; msgs.scrollTop = msgs.scrollHeight;
-      },
+      onText: ({ text }) => { setTxt(ensureOut(), text); msgs.scrollTop = msgs.scrollHeight; },
     });
     const reply = text.trim() || '…';
-    t.classList.remove('typing'); t.textContent = reply;
-    history[i].push({ role: 'assistant', content: reply });
-    showBubble(i, pick(a.tasks)); celebrate(i, reply);
+    setTxt(ensureOut(), reply);
+    a.history.push({ role: 'assistant', content: reply }); saveChat(a);
+    showBubble(ag, pick(a.tasks)); celebrate(ag, reply);
+    if (autoRead && focused === ag) speakLines([{ text: reply, voice: a.voice }]);
   } catch (e) {
-    t.classList.remove('typing');
-    if (e?.text) { t.textContent = e.text; history[i].push({ role: 'assistant', content: e.text }); }
-    else t.remove();
-    if (e?.code !== 'cancelled') {
-      const n = say(ERR[e?.code] || 'تعذّر الحصول على رد الآن. أعد المحاولة بعد قليل.'); n.classList.add('note');
-      if (FATAL.has(e?.code)) { aiOff = true; updateMode(); }
-    }
+    if (e?.text) { setTxt(ensureOut(), e.text); a.history.push({ role: 'assistant', content: e.text }); }
+    else { t.remove(); if (out && !out.querySelector('.txt').textContent) out.remove(); }
+    saveChat(a);
+    if (e?.code !== 'cancelled') { note(errText(e)); noteFatal(e); }
   } finally {
     setBusy(false); msgs.scrollTop = msgs.scrollHeight;
   }
 }
 
-/* --------------------------------------------------------------- selection */
-let focusIdx = -1;
-function focusOn(p, zoom) {
-  const off = camera.position.clone().sub(controls.target);
-  gsap.to(controls.target, { x: p.x, y: p.y, z: p.z, duration: D(1.1), ease: 'power3.inOut', onUpdate: () => camera.position.copy(controls.target).add(off) });
-  gsap.to(camera, { zoom, duration: D(1.1), ease: 'power3.inOut' });
-}
-function onSelect(i) {
-  agentGroups.forEach((o, j) => gsap.to(o, { selA: j === i ? 1 : 0, duration: D(0.5) }));
-  focusIdx = i;
-  if (i >= 0) {
-    const p = agentGroups[i].g.position;
-    focusOn(new THREE.Vector3(p.x, 1.2, p.z - 0.5), isPhone() ? 1.9 : 1.6);
-    gsap.to(V, { focus: 1, shift: 1, duration: D(1.1), ease: 'power3.inOut' });
-    openChat(i); ring3d(agentGroups[i].ring, AGENTS[i].color, 2.6, 1, 0.4); boost(i, 1, 1.2);
-  } else {
-    focusOn(new THREE.Vector3(0, 0.5, 0), 1);
-    gsap.to(V, { focus: 0, shift: 0, duration: D(0.9), ease: 'power3.inOut' });
-    closeChat();
+/* --------------------------------------------------------------- team meeting */
+const meeting = { running: false, ctl: null, skip: null, skipAll: false };
+const mp = $('meet-pane');
+const fmtDate = ts => { try { return new Date(ts).toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
+const EXAMPLES = ['كيف نطلق ميزة الاشتراك الشهري خلال شهر؟', 'خطة لتقليل شكاوى العملاء بنسبة 30%', 'حملة تسويق بميزانية 5,000 دولار'];
+
+function renderMeetHome() {
+  mp.replaceChildren();
+  mp.append(el('p', 'lead', 'اكتب مهمة أو سؤالاً، وسيناقشه كل الوكلاء من زاوية تخصصهم، ثم تحصل على خطة مشتركة فيها مسؤول عن كل خطوة.'));
+  const ta = el('textarea'); ta.id = 'meet-topic'; ta.rows = 3; ta.maxLength = 600; ta.placeholder = 'مثلاً: كيف نزيد مبيعات المتجر في رمضان؟';
+  const ex = el('div', 'chips'); ex.style.padding = '0';
+  EXAMPLES.forEach(x => { const b = el('button', '', x); b.type = 'button'; b.onclick = () => { ta.value = x; ta.focus(); }; ex.append(b); });
+  const go = el('button', 'btn primary', 'ابدأ الاجتماع'); go.type = 'button';
+  go.onclick = () => { const v = ta.value.trim(); if (v) runMeeting(v); else ta.focus(); };
+  const row = el('div', 'row'); row.append(go);
+  mp.append(ta, ex, row);
+  if (!aiReady()) mp.append(el('p', 'lead', 'الاجتماع يحتاج Claude، وهو غير متاح في هذه الصفحة الآن. افتح الصفحة من claude.ai واسمح لها باستخدام Claude.'));
+  if (pastMeetings.length) {
+    mp.append(el('h3', '', 'اجتماعات سابقة'));
+    const ul = el('ul', 'past');
+    pastMeetings.forEach(m => {
+      const li = el('li'), b = el('button'); b.type = 'button';
+      b.append(document.createTextNode(m.topic.length > 70 ? m.topic.slice(0, 68) + '…' : m.topic), el('time', '', fmtDate(m.at)));
+      b.onclick = () => renderMeetResult(m, false);
+      li.append(b); ul.append(li);
+    });
+    mp.append(ul);
   }
-  refreshTeam();
 }
 
+function lineEl(name, color, text) {
+  const d = el('div', 'line'); d.style.setProperty('--c', color);
+  const ava = el('span', 'ava'); ava.append(el('i'));
+  const body = el('div'); body.append(el('b', '', name), document.createTextNode(text));
+  d.append(ava, body); return d;
+}
+function agentInfo(key) { const ag = byKey(key); return ag ? { name: ag.a.name, color: ag.a.color, voice: ag.a.voice } : null; }
+
+function planEl(m) {
+  const box = el('div', 'plan');
+  box.append(el('b', '', 'الخطة المشتركة'));
+  if (m.summary) box.append(el('p', '', m.summary));
+  const ol = el('ol');
+  (m.plan || []).forEach(p => {
+    const li = el('li', '', p.step + ' ');
+    const who = agentInfo(p.owner) || (p.ownerName ? { name: p.ownerName, color: '' } : null);
+    if (who) { const em = el('em', '', `— ${who.name}`); if (who.color) em.style.setProperty('--c', who.color); li.append(em); }
+    ol.append(li);
+  });
+  box.append(ol); return box;
+}
+function meetListenButton(m) {
+  const b = el('button', 'btn', '▶ استمع للاجتماع'); b.type = 'button'; b.hidden = !canSpeak();
+  b.onclick = () => speakLines([
+    ...m.lines.map(l => ({ text: `${l.name}: ${l.text}`, voice: agentInfo(l.key)?.voice || 'buttery' })),
+    { text: 'الخطة المشتركة. ' + (m.summary || '') + ' ' + (m.plan || []).map((p, k) => `${k + 1}. ${p.step}`).join(' '), voice: 'buttery' },
+  ]);
+  return b;
+}
+function renderMeetResult(m, fresh) {
+  mp.replaceChildren();
+  mp.append(el('div', 'topic', m.topic));
+  m.lines.forEach(l => mp.append(lineEl(l.name, agentInfo(l.key)?.color || '#94a3b8', l.text)));
+  mp.append(planEl(m));
+  const row = el('div', 'row');
+  const back = el('button', 'btn primary', fresh ? 'اجتماع جديد' : 'رجوع'); back.type = 'button'; back.onclick = renderMeetHome;
+  row.append(back, meetListenButton(m));
+  mp.append(row);
+  if (!fresh) mp.scrollTop = 0;
+}
+
+function meetingPrompt(topic) {
+  const members = agentGroups.map(o => `- key: ${o.a.key} | الاسم: ${o.a.name} | الدور: ${o.a.role} | ${isFemale(o.a) ? 'أنثى' : 'ذكر'} | ${o.a.desc || o.a.intro}`).join('\n');
+  return `أنت تدير اجتماع عمل لفريق من وكلاء الذكاء الاصطناعي في «خلية المكتب». أعضاء الفريق:
+${members}
+
+المهمة التي طرحها المستخدم على الفريق:
+«${topic}»
+
+اكتب نقاشاً واقعياً وعميقاً بين الأعضاء حول هذه المهمة:
+- يتكلم كل عضو مرة واحدة على الأقل من زاوية تخصصه، بأفكار محددة وأرقام تقديرية أو أمثلة عند الحاجة.
+- يمكن أن يرد عضو على زميل باسمه، أو يعترض على فكرة ويقترح بديلاً.
+- كل مداخلة من جملتين إلى أربع جمل، والمجموع بين ${Math.min(agentGroups.length + 2, 12)} و${Math.min(agentGroups.length * 2, 14)} مداخلة.
+- العضوات يتكلمن بصيغة المؤنث، والأعضاء بصيغة المذكر.
+- ثم خطة مشتركة من 4 إلى 7 خطوات عملية مرتبة، لكل خطوة عضو مسؤول.
+- عربية بسيطة، نص عادي بلا Markdown. لا تدّعِ أن أحداً نفّذ شيئاً حقيقياً خارج الاجتماع.
+
+أعد JSON فقط بهذا الشكل بالضبط:
+{"discussion":[{"key":"مفتاح العضو","text":"..."}],"plan":[{"step":"...","owner":"مفتاح العضو"}],"summary":"جملتان تلخصان القرار"}`;
+}
+
+async function runMeeting(topic) {
+  if (meeting.running) return;
+  if (!aiReady()) { renderMeetHome(); return; }
+  meeting.running = true; setTabState('meet'); stopVoice();
+  mp.replaceChildren();
+  mp.append(el('div', 'topic', topic));
+  const status = el('div', 'status', 'الفريق يتناقش… قد يستغرق ذلك دقيقة أو أكثر.');
+  const stop = el('button', 'btn', 'إيقاف'); stop.type = 'button';
+  const row = el('div', 'row'); row.append(stop);
+  mp.append(status, row);
+  meeting.ctl = new AbortController();
+  stop.onclick = () => meeting.ctl.abort();
+
+  // robots look busy while Claude thinks
+  const fidget = setInterval(() => { const o = pick(agentGroups); o.kick = 1; showBubble(o, isFemale(o.a) ? 'تفكّر…' : 'يفكّر…'); sendPulse(o); }, 1500);
+  let res;
+  try {
+    res = await sample.json(meetingPrompt(topic), { modelTier: 'complex', signal: meeting.ctl.signal });
+  } catch (e) {
+    clearInterval(fidget); meeting.running = false;
+    renderMeetHome();
+    if (e?.code !== 'cancelled') { mp.prepend(el('p', 'lead', errText(e))); noteFatal(e); }
+    return;
+  }
+  clearInterval(fidget);
+
+  const lines = (Array.isArray(res?.discussion) ? res.discussion : [])
+    .filter(l => l && byKey(l.key) && typeof l.text === 'string' && l.text.trim())
+    .map(l => ({ key: l.key, name: byKey(l.key).a.name, text: l.text.trim().slice(0, 900) }));
+  const plan = (Array.isArray(res?.plan) ? res.plan : [])
+    .filter(p => p && typeof p.step === 'string' && p.step.trim())
+    .map(p => ({ step: p.step.trim().slice(0, 300), owner: typeof p.owner === 'string' ? p.owner : '', ownerName: byKey(p.owner)?.a.name || '' })).slice(0, 8);
+  if (!lines.length) {
+    meeting.running = false; renderMeetHome(); mp.prepend(el('p', 'lead', ERR.invalid_json)); return;
+  }
+  const m = { id: 'm' + Date.now().toString(36), topic, lines, plan, summary: typeof res.summary === 'string' ? res.summary.slice(0, 500) : '', at: Date.now() };
+
+  // play the discussion: each speaker lights up in turn
+  status.textContent = 'الاجتماع جارٍ';
+  stop.textContent = 'عرض الكل';
+  meeting.skipAll = false;
+  stop.onclick = () => { meeting.skipAll = true; meeting.skip?.(); };
+  for (const l of lines) {
+    const ag = byKey(l.key); if (!ag) continue;
+    speaker = ag;
+    agentGroups.forEach(o => gsap.to(o, { selA: o === ag ? 1 : 0, duration: D(0.4) }));
+    ag.kick = 1; showBubble(ag, isFemale(ag.a) ? 'تتحدث…' : 'يتحدث…'); sendPulse(ag); boost(ag, 0.8, 1);
+    mp.insertBefore(lineEl(l.name, ag.a.color, l.text), status);
+    mp.scrollTop = mp.scrollHeight;
+    if (!meeting.skipAll) await new Promise(r => { meeting.skip = r; setTimeout(r, Math.min(5200, 1400 + l.text.length * 28)); });
+  }
+  speaker = null; meeting.skip = null;
+  agentGroups.forEach(o => gsap.to(o, { selA: 0, duration: D(0.4) }));
+  stormEvent(null, '#c9a6ff', 0.6);
+  plan.forEach(p => { const ag = byKey(p.owner); if (ag) addLog(ag, p.step.length > 90 ? p.step.slice(0, 88) + '…' : p.step); });
+  tasks += plan.length; $('st-tasks').textContent = tasks;
+  pastMeetings = [m, ...pastMeetings.filter(x => x.id !== m.id)].slice(0, 12);
+  saveMeeting(m);
+  meeting.running = false;
+  renderMeetResult(m, true);
+  mp.scrollTop = mp.scrollHeight;
+  if (autoRead) meetListenButton(m).click();
+}
+$('meet-close').onclick = () => {
+  if (meeting.running) { meeting.ctl?.abort(); meeting.skipAll = true; meeting.skip?.(); setTabState('office'); showPanel(null); focusOn(new THREE.Vector3(0, 0.5, 0), 1); return; }
+  setTab('office');
+};
+
+/* --------------------------------------------------------------- new agent */
+NEW_COLORS.forEach((c, k) => {
+  const lab = el('label'); const inp = el('input'); inp.type = 'radio'; inp.name = 'new-color'; inp.value = c; inp.id = 'new-color-' + k;
+  inp.setAttribute('aria-label', 'لون ' + (k + 1)); if (k === 0) inp.checked = true;
+  const sw = el('span'); sw.style.setProperty('--c', c);
+  inp.onchange = () => $('new-ava').style.setProperty('--c', c);
+  lab.append(inp, sw); $('new-colors').append(lab);
+});
+function openNew() {
+  if (freeSlot() < 0 || meeting.running) return;
+  onSelect(null); setTabState('office'); showPanel('new');
+  $('new-status').textContent = ''; $('new-submit').disabled = false;
+  const used = new Set(agentGroups.map(o => o.a.color));
+  const c = NEW_COLORS.find(x => !used.has(x)) || NEW_COLORS[0];
+  document.querySelector(`input[name="new-color"][value="${c}"]`).checked = true; $('new-ava').style.setProperty('--c', c);
+  focusOn(new THREE.Vector3(3, 0.5, 0), isPhone() ? 0.95 : 1);
+  setTimeout(() => $('new-name').focus(), 400);
+}
+$('new-close').onclick = () => showPanel(null);
+$('new-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('new-name').value.trim(), role = $('new-role').value.trim(), desc = $('new-desc').value.trim();
+  if (!name || !role) return;
+  const slot = freeSlot(); if (slot < 0) { $('new-status').textContent = 'المكتب ممتلئ. احذف وكيلاً أضفته لتفريغ مكتب.'; return; }
+  const gender = document.querySelector('input[name="new-gender"]:checked').value;
+  const color = document.querySelector('input[name="new-color"]:checked').value;
+  $('new-submit').disabled = true;
+  let extra = null;
+  if (aiReady()) {
+    $('new-status').textContent = 'Claude يجهّز شخصية الوكيل…';
+    try {
+      extra = await sample.json(`أنشئ ملفاً قصيراً لوكيل ذكاء اصطناعي جديد في مكتب افتراضي اسمه «خلية المكتب».
+الاسم: ${name}
+التخصص: ${role}
+الوصف: ${desc || 'غير محدد'}
+الجنس: ${gender === 'f' ? 'أنثى (استخدم صيغة المؤنث)' : 'ذكر (استخدم صيغة المذكر)'}
+أعد JSON فقط: {"intro":"تعريف بصوت الوكيل نفسه في جملتين يبدأ باسمه","tasks":["3 مهام قصيرة جداً يعمل عليها الآن بصيغة المتكلم، 2-4 كلمات"],"questions":["سؤالان قصيران يمكن أن يطرحهما المستخدم على هذا الوكيل"]}`, { modelTier: 'quick' });
+    } catch (err) { noteFatal(err); }
+  }
+  const intro = typeof extra?.intro === 'string' && extra.intro.trim() ? extra.intro.trim().slice(0, 300)
+    : `${name} ${gender === 'f' ? 'جاهزة' : 'جاهز'} للعمل في ${role}.${desc ? ' ' + desc : ''}`;
+  let tasksList = strList(extra?.tasks, 3, 40); if (!tasksList.length) tasksList = [`أعمل على ${role}`, 'أرتّب أولويات اليوم', 'أراجع الملاحظات'];
+  const questions = strList(extra?.questions, 2, 60);
+  const a = { key: 'c' + Date.now().toString(36), name: name.slice(0, 16), role: role.slice(0, 30), desc: desc.slice(0, 240), intro, color, gender,
+    voice: gender === 'f' ? 'glassy' : 'rounded', tasks: tasksList, chips: Object.fromEntries(questions.map(q => [q, ''])),
+    working: true, custom: true, history: [], slot };
+  const ag = makeStation(a, true);
+  renderTeam(); saveAgent(a);
+  $('new-form').reset(); $('new-status').textContent = '';
+  addLog(ag, `${a.name} ${gender === 'f' ? 'انضمت' : 'انضم'} إلى الفريق`);
+  setTimeout(() => onSelect(ag), 1100);
+});
+
+/* --------------------------------------------------------------- picking */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+  if (meeting.running) return;
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   if (ray.intersectObject(coreBall).length) { setTab('hive'); return; }
-  const hit = ray.intersectObjects(hitMeshes)[0];
-  onSelect(hit ? (hit.object.userData.idx === focusIdx ? -1 : hit.object.userData.idx) : -1);
+  const ag = ray.intersectObjects(hitMeshes)[0]?.object.userData.ag || null;
+  if (ag) onSelect(ag === focused ? null : ag);
+  else if (panel === 'chat') onSelect(null);
 });
 renderer.domElement.addEventListener('pointermove', e => {
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -804,19 +1319,18 @@ renderer.domElement.addEventListener('pointermove', e => {
   renderer.domElement.style.cursor = ray.intersectObjects(hitMeshes).length || ray.intersectObject(coreBall).length ? 'pointer' : 'grab';
 });
 
-/* --------------------------------------------------------------- task loop */
-function showBubble(i, text) {
-  const ag = agentGroups[i]; ag.bubble.textContent = text; ag.bubble.classList.add('on');
+/* --------------------------------------------------------------- ambient task loop */
+function showBubble(ag, text) {
+  ag.bubble.textContent = text; ag.bubble.classList.add('on');
   clearTimeout(ag.bubbleTimer); ag.bubbleTimer = setTimeout(() => ag.bubble.classList.remove('on'), 3200);
 }
-let built = false;
 function taskTick() {
-  if (built) {
+  if (built && !meeting.running) {
     const working = agentGroups.filter(o => o.a.working);
     if (working.length) {
       const o = pick(working), t = pick(o.a.tasks);
-      showBubble(o.i, t); sendPulse(o.i);
-      tasks++; $('st-tasks').textContent = tasks; addLog(o.i, t);
+      showBubble(o, t); sendPulse(o);
+      tasks++; $('st-tasks').textContent = tasks; addLog(o, t);
     }
   }
   setTimeout(taskTick, rand(2200, 4200));
@@ -827,23 +1341,23 @@ let buildTl;
 function runBuild() {
   built = false;
   if (buildTl) buildTl.kill();
-  const tl = buildTl = gsap.timeline({ onComplete: () => { built = true; } });
+  const tl = buildTl = gsap.timeline({ onComplete: () => {
+    built = true;
+    agentGroups.forEach(o => { if (o.beam.line.material.opacity < 0.2) gsap.to(o.beam.line.material, { opacity: 0.22, duration: D(0.6) }); });
+  } });
   BUILD.forEach(({ obj, kind, delay }) => {
-    const h = obj.userData.home, s = obj.userData.scaleHome;
+    const s = obj.userData.scaleHome;
     if (kind === 'floor') tl.fromTo(obj.scale, { x: 0.001, z: 0.001 }, { x: s.x, z: s.z, duration: D(0.9), ease: 'expo.out' }, 0);
     else if (kind === 'wall') tl.fromTo(obj.scale, { y: 0.001 }, { y: s.y, duration: D(0.8), ease: 'expo.out' }, 0.35);
-    else if (kind === 'drop') tl.fromTo(obj.position, { y: h.y + 7 }, { y: h.y, duration: D(0.8), ease: 'bounce.out' }, delay);
-    else if (kind === 'pop') tl.fromTo(obj.scale, { x: 0.001, y: 0.001, z: 0.001 }, { x: s.x, y: s.y, z: s.z, duration: D(0.6), ease: 'back.out(2.2)' }, delay);
-    else if (kind === 'ring') tl.fromTo(obj.scale, { x: 0.001, y: 0.001 }, { x: 1, y: 1, duration: D(0.9), ease: 'expo.out' }, delay);
+    else animateIn(tl, obj, kind, delay);
   });
-  // the core ignites
   tl.fromTo(coreU.uIgnite, { value: 0 }, { value: 1, duration: D(0.8), ease: 'power2.in' }, 2.0);
   tl.fromTo(cloud.material, { opacity: 0 }, { opacity: 0.32, duration: D(1.2) }, 2.4);
   tl.fromTo(coreWire.material, { opacity: 0 }, { opacity: 0.18, duration: D(1) }, 2.4);
   orbits.forEach((o, k) => tl.fromTo(o.material, { opacity: 0 }, { opacity: 0.6, duration: D(0.8) }, 2.5 + k * 0.1));
   tl.fromTo(coreLight, { intensity: 0 }, { intensity: 14, duration: D(1) }, 2.4);
-  beams.forEach((b, k) => tl.fromTo(b.line.material, { opacity: 0 }, { opacity: 0.22, duration: D(0.6) }, 2.7 + k * 0.06));
-  tl.call(() => stormEvent(-1, '#c9a6ff', 1.3), null, 2.8);
+  agentGroups.forEach((o, k) => tl.fromTo(o.beam.line.material, { opacity: 0 }, { opacity: 0.22, duration: D(0.6) }, 2.7 + k * 0.06));
+  tl.call(() => stormEvent(null, '#c9a6ff', 1.3), null, 2.8);
 }
 
 /* --------------------------------------------------------------- frame loop */
@@ -853,9 +1367,8 @@ function frame() {
   const dt = Math.min(clockT.getDelta(), 0.05), t = clockT.elapsedTime;
   coreU.uTime.value = t; coreU.uStorm.value = V.storm;
 
-  // agents
-  for (const o of agentGroups) {
-    const w = o.a.working, k = o.i;
+  agentGroups.forEach((o, k) => {
+    const w = o.a.working;
     if (w) {
       o.arms[0].rotation.x = -1.15 + Math.sin(t * 16 + k) * 0.13;
       o.arms[1].rotation.x = -1.15 + Math.sin(t * 16 + k + 2.4) * 0.13;
@@ -868,30 +1381,26 @@ function frame() {
       o.headPivot.rotation.y = Math.sin(t * 0.4) * 0.6;
       o.headPivot.rotation.x = -0.1;
     }
-    // little hop when the agent receives a message
-    if (o.kick > 0) { o.kick = Math.max(0, o.kick - dt * 1.6); }
+    if (o.kick > 0) o.kick = Math.max(0, o.kick - dt * 1.6);
     o.robot.position.y = Math.sin(t * 2 + k) * 0.02 + Math.sin(o.kick * Math.PI) * 0.35;
-    // blink
     const blink = (t > o.blinkAt && t < o.blinkAt + 0.12) ? 0.15 : 1;
     if (t > o.blinkAt + 0.12) o.blinkAt = t + rand(2, 6);
     o.eyes.forEach(e => e.scale.y = blink);
     o.antenna.material.opacity = 0.6 + 0.4 * Math.sin(t * 3 + k);
-    // rings
     const lvl = (w ? 0.6 : 0.3) + 0.15 * Math.sin(t * 2 + k) + o.selA * 0.5 + o.boost;
     o.outer.material.opacity = Math.min(lvl, 1.6);
     o.disc.material.opacity = 0.05 + o.selA * 0.08 + o.boost * 0.15;
     o.inner.rotation.z += dt * (0.4 + o.boost * 3);
-    o.ring.scale.x = o.ring.scale.y = o.ring.scale.x > 0.999 && built ? 1 + o.boost * 0.08 + o.selA * 0.04 : o.ring.scale.x;
+    if (o.ring.scale.x > 0.999 && built) o.ring.scale.x = o.ring.scale.y = 1 + o.boost * 0.08 + o.selA * 0.04;
     o.screenLight.intensity = w ? 1.2 + Math.sin(t * 9 + k) * 0.2 : 0.4;
-    // label position
     tmp.set(0, 2.6, -0.95); o.g.localToWorld(tmp); tmp.project(camera);
     const hw = (o.tag.offsetWidth || 80) / 2 + 8;
     const sx = Math.min(innerWidth - hw, Math.max(hw, (tmp.x * 0.5 + 0.5) * innerWidth)), sy = (-tmp.y * 0.5 + 0.5) * innerHeight;
     o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
-    o.tag.style.opacity = built ? (focusIdx < 0 || focusIdx === k ? 1 : 0.35) : 0;
-  }
+    const lead = speaker || focused;
+    o.tag.style.opacity = built || o.robot.scale.x > 0.99 ? (!lead || lead === o ? 1 : 0.35) : 0;
+  });
 
-  // core
   coreBall.scale.setScalar(1 + V.storm * 0.25 + Math.sin(t * 2) * 0.02);
   coreWire.rotation.y += dt * 0.2; coreWire.rotation.x += dt * 0.07;
   cloud.rotation.y += dt * (0.12 + V.storm * 1.2);
@@ -902,10 +1411,8 @@ function frame() {
   if (built) coreLight.intensity = 10 + V.storm * 30 + Math.sin(t * 3) * 1.5;
   bloom.strength = 0.5 + V.storm * 0.35;
 
-  // floor tiles flicker
   for (const tl of tiles) tl.material.opacity = Math.max(0, Math.sin(t * 0.8 + tl.userData.phase)) * 0.12 + V.storm * 0.1;
 
-  // bursts
   for (let b = bursts.length - 1; b >= 0; b--) {
     const B = bursts[b]; B.life -= dt;
     const arr = B.pts.geometry.attributes.position.array;
@@ -917,7 +1424,6 @@ function frame() {
     if (B.life <= 0) { scene.remove(B.pts); B.pts.geometry.dispose(); B.pts.material.dispose(); bursts.splice(b, 1); }
   }
 
-  // camera shake on the world group
   world.position.set((Math.random() - 0.5) * V.shake * 0.25, (Math.random() - 0.5) * V.shake * 0.25, 0);
 
   controls.update();
@@ -926,7 +1432,24 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-refreshTeam();
+/* --------------------------------------------------------------- start */
+renderTeam();
+updateMode(); updateVoiceUI();
+if (window.claude?.use) {
+  window.claude.use('sample').then(fn => { sample = fn; updateMode(); if (panel === 'meet' && !meeting.running) renderMeetHome(); }).catch(() => {});
+  window.claude.use('tts').then(t => { tts = t; updateVoiceUI(); }).catch(() => {});
+  window.claude.use('dictation').then(d => {
+    if (!d) return;
+    dict = d; $('mic').hidden = false;
+    d.onPartial(({ text }) => { $('msg-input').value = (dictBase + ' ' + text).trim(); });
+    d.onFinal(({ text }) => { dictBase = (dictBase + ' ' + text).trim(); $('msg-input').value = dictBase; });
+    d.onState(({ state, reason }) => {
+      listening = state !== 'idle'; $('mic').classList.toggle('rec', listening);
+      if (state === 'idle' && (reason === 'unavailable' || reason === 'not_granted')) $('mic').hidden = true;
+    });
+  }).catch(() => {});
+}
+restore();
 runBuild();
 setTimeout(taskTick, 3500);
 frame();
