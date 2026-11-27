@@ -17,6 +17,7 @@ import './workspace.js';
 import { initMultiuser, openInvite } from './multiuser.js';
 import { openStore } from './templates.js';
 import { restoreKnowledge, openKnowledge, nudgeProfile } from './knowledge.js';
+import { exportAll, importAll } from './store.js';
 import { restoreProjects, openProjects } from './projects.js';
 import { maybeBrief } from './brief.js';
 import { initThemes } from './themes.js';
@@ -29,7 +30,7 @@ import { rebuildNav } from './nav.js';
 import { initStore, loadAll, saveState, del } from './store.js';
 import { initAI, updateMode } from './ai.js';
 import { initVoice } from './voice.js';
-import { initNotes, renderNotes } from './notify.js';
+import { initNotes, renderNotes, notify } from './notify.js';
 import { addLog, restoreLog } from './log.js';
 import { initChat } from './chat.js';
 import { initPanel, openAgentPanel, closeAgentPanel } from './panel.js';
@@ -299,6 +300,25 @@ initGrowth();
 initReception();
 $('projects-btn').onclick = openProjects;
 $('routines-btn').onclick = openRoutines;
+$('set-export').onclick = async () => {
+  const data = await exportAll(); if (!data) return notify({ text: 'لا يوجد حفظ في هذه الصفحة لتصديره.', kind: 'error' });
+  const name = `deskhive-office-${new Date().toISOString().slice(0, 10)}.json`, text = JSON.stringify(data);
+  try { const dl = await window.claude?.use?.('downloads'); if (dl) { await dl.save({ filename: name, data: text }); return; } } catch { /* fall back */ }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click();
+};
+$('set-import').onclick = () => $('set-import-file').click();
+$('set-import-file').onchange = async e => {
+  const f = e.target.files?.[0]; if (!f) return;
+  try {
+    const n = await importAll(JSON.parse(await f.text()));
+    notify({ text: `استُورد ${n} عنصراً. سيُعاد تحميل المكتب الآن.`, kind: 'done' }); setTimeout(() => location.reload(), 1500);
+  } catch (err) { notify({ text: 'تعذّر الاستيراد: ' + (err?.message || ''), kind: 'error' }); }
+  e.target.value = '';
+};
+if (window.DESKHIVE_STANDALONE) {
+  const showAccount = () => { const acc = window.DESKHIVE_ACCOUNT; if (!acc) return setTimeout(showAccount, 1000); $('set-account').hidden = false; $('set-account-email').textContent = acc.email; $('set-logout').onclick = () => acc.signOut(); };
+  showAccount();
+}
 $('set-kb').onclick = () => { $('settings-pop').hidden = true; openKnowledge(); };
 $('set-services').onclick = () => { $('settings-pop').hidden = true; openServices(); };
 $('set-store').onclick = () => { $('settings-pop').hidden = true; openStore(); };

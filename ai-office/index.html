@@ -196,6 +196,8 @@
     <label class="field">مستوى الصوت<input type="range" id="set-vol" min="0" max="100" step="5"></label>
     <div class="row"><button class="btn" id="set-store" type="button">متجر الوكلاء</button><button class="btn" id="set-plans" type="button">الاشتراك</button><button class="btn" id="set-invite" type="button">ادعُ زملاءك</button></div>
     <button class="btn gold" id="set-kb" type="button">ملف الشركة والمعرفة</button>
+    <div class="row"><button class="btn" id="set-export" type="button">صدّر بياناتي</button><button class="btn" id="set-import" type="button">استورد بيانات</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
+    <div class="row account" id="set-account" hidden><span class="muted" id="set-account-email"></span><button class="btn" id="set-logout" type="button">تسجيل الخروج</button></div>
     <button class="btn" id="set-services" type="button">الخدمات المربوطة: Gmail وDrive والمكالمات</button>
     <label class="field">سطوع المكتب <span class="muted" id="set-bright-v"></span><input type="range" id="set-bright" min="60" max="160" step="5"></label>
     <label class="field">لون الإضاءة<select id="set-warmth"><option value="warm">دافئ</option><option value="neutral">محايد</option><option value="cool">بارد</option></select></label>
@@ -232,4 +234,5 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
+<script type="module" src="js/standalone.js"></script>
 <script type="module" src="js/main.js"></script>

@@ -13,6 +13,12 @@ export const INTEGRATIONS = {
   calendar: { label: 'Google Calendar', server: COMPOSIO, toolkit: 'googlecalendar', about: 'قراءة مواعيدك وحجز الاجتماعات في تقويمك بعد موافقتك (عبر Composio)' },
   slack: { label: 'Slack', server: COMPOSIO, toolkit: 'slack', about: 'إرسال تحديثات الفريق إلى قنوات Slack بعد موافقتك (عبر Composio)' },
 };
+// on the standalone site (GitHub Pages) Gmail and Drive also connect through Composio, and phone calls are not offered
+if (window.DESKHIVE_STANDALONE) {
+  INTEGRATIONS.gmail.toolkit = 'gmail'; INTEGRATIONS.gmail.about = 'قراءة البريد وإرسال رسائل بعد موافقتك (عبر Composio)';
+  INTEGRATIONS.drive.toolkit = 'googledrive'; INTEGRATIONS.drive.about = 'حفظ مخرجات الوكلاء في Drive بعد موافقتك (عبر Composio)';
+  INTEGRATIONS.phone.server = ''; INTEGRATIONS.phone.about = 'المكالمات متاحة في نسخة claude.ai فقط';
+}
 // what the page declares to the artifact runtime (kept in one place)
 export const MCP_MANIFEST = [
   ...Object.values(INTEGRATIONS).filter(i => i.server && !i.toolkit).map(i => ({ server: i.server, tools: i.tools })),
@@ -46,7 +52,7 @@ export async function callIntegration(id, tool, input) {
   const i = INTEGRATIONS[id];
   if (!i?.server) throw { code: 'server_not_connected', message: `${i?.label || id} غير متصل.` };
   if (!mcp) throw { code: 'capability_disabled', message: 'الربط بالخدمات الخارجية غير متاح في هذه الصفحة. افتحها من claude.ai.' };
-  if (i.toolkit) return composioRun(id, tool, input);
+  if (i.toolkit && i.server === COMPOSIO) return composioRun(id, tool, input);
   const r = await mcp.callTool(i.server, tool, input);
   status[id] = 'ready'; emit('integrations-changed');
   return r.payload ?? r.json ?? r.content?.map(c => c.text).join('\n');

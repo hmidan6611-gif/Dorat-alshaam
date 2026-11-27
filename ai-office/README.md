@@ -41,6 +41,8 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/brief.js` | The CEO's daily brief |
 | `js/themes.js` | Seasonal themes and always-on string lights |
 | `js/lighting.js` | Brightness and warmth settings; floor lamps and ceiling lights follow the day cycle |
+| `js/standalone.js` | Outside claude.ai (GitHub Pages): login and the same `window.claude.use()` backed by Supabase and the `office-api` function |
+| `js/config.js` | Public Supabase project URL and publishable key for the standalone site (no secrets) |
 | `js/teamboard.js` | Optional shared team board: task titles and progress only, off by default, each person writes only their own entry |
 | `js/templates.js` | Agent store: ready-made agents installed with one click |
 | `js/plans.js` | Subscription plans by number of agents (no real payment) |
@@ -64,3 +66,13 @@ Claude, saving, voice and downloads; elsewhere it falls back to sample replies a
 | `js/state.js`, `js/data.js`, `js/util.js` | Shared state, static data, helpers and an event bus |
 
 Add `?hour=22` to the address to start the fast day clock at a given hour, and `?debug` to expose state for automated checks.
+
+
+## Standalone site (GitHub Pages + Supabase)
+
+- Page: GitHub Pages from this branch, path `/ai-office/`. Login with email and password (Supabase Auth).
+- Data: table `docs` with row-level security; each user sees only `data/users/<their id>/...` (plus the opt-in team board).
+- Server: Supabase Edge Function `office-api` (`supabase/functions/office-api`) proxies Claude and Composio.
+- Secrets (Supabase → Edge Functions → Secrets, never in code): `COMPOSIO_API_KEY`, optional `ANTHROPIC_API_KEY`,
+  `ALLOWED_EMAILS` (comma-separated; who may use the paid APIs), optional `DAILY_REQUEST_LIMIT` (default 300).
+- Move data between versions: Settings → «صدّر بياناتي» in one, «استورد بيانات» in the other.

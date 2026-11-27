@@ -9,7 +9,7 @@ import { officeDoorOut, roomMax } from './layout.js';
 import { $, el, button, on, isPhone } from './util.js';
 import { openModal } from './modal.js';
 
-const ARTIFACT_URL = 'https://claude.ai/artifact/4qqVdf8fXWjufGWxNkkesh';
+const ARTIFACT_URL = window.DESKHIVE_STANDALONE ? location.origin + location.pathname : 'https://claude.ai/artifact/4qqVdf8fXWjufGWxNkkesh';
 const COLORS = ['#22d3ee', '#a3e635', '#f472b6', '#facc15', '#fb923c', '#c084fc'];
 let room = null, user = null, me = null;
 const avatars = new Map(); // peer id -> {g, tag, target, path, floor}
@@ -96,7 +96,7 @@ onFrame((dt, time) => {
 /* ------------------------------------------------------------------ invite */
 export function openInvite() {
   const frag = document.createDocumentFragment();
-  frag.append(el('p', 'lead', 'لدعوة زملائك: افتح قائمة «مشاركة» (Share) في claude.ai وأعطهم صلاحية الوصول، ثم أرسل لهم هذا الرابط. سيظهر كل من يفتح المكتب كأفاتار باسمه، ويرى الوكلاء ويكلمهم.'));
+  frag.append(el('p', 'lead', window.DESKHIVE_STANDALONE ? 'أرسل هذا الرابط لزملائك: كل واحد ينشئ حساباً بنفسه، ويظهر كأفاتار باسمه حين يفتح المكتب. مكتب كل واحد وبياناته خاصة به.' : 'لدعوة زملائك: افتح قائمة «مشاركة» (Share) في claude.ai وأعطهم صلاحية الوصول، ثم أرسل لهم هذا الرابط. سيظهر كل من يفتح المكتب كأفاتار باسمه، ويرى الوكلاء ويكلمهم.'));
   const link = el('div', 'doc', ARTIFACT_URL); link.dir = 'ltr'; frag.append(link);
   frag.append(el('p', 'lead', 'مهام كل زميل ومحادثاته خاصة به، وردود الوكلاء له تُحتسب من حسابه هو في Claude.'));
   const copy = button('btn primary', 'انسخ الرابط', async () => {

@@ -80,3 +80,24 @@ async function write(fnDb, fnLocal) {
     saveState(store.kind === 'db' ? 'محفوظ في حسابك' : 'محفوظ في هذا المتصفح');
   } catch { saveState('تعذّر الحفظ', false); }
 }
+
+/** Everything you saved, as one JSON file (moves your office between claude.ai and the standalone site). */
+export async function exportAll() {
+  const data = await loadAll(); if (!data) return null;
+  return { app: 'deskhive-office', version: 1, at: new Date().toISOString(), collections: data };
+}
+/** Write an exported file into this office's storage. Returns how many documents were written. */
+export async function importAll(file) {
+  if (file?.app !== 'deskhive-office' || typeof file.collections !== 'object') throw new Error('هذا ليس ملف تصدير من خلية المكتب.');
+  let n = 0;
+  for (const col of Object.keys(COLS)) {
+    const docs = Array.isArray(file.collections[col]) ? file.collections[col] : [];
+    for (const d of docs.slice(0, COLS[col])) {
+      if (!d || typeof d.id !== 'string' || !d.id || d.id.includes('/')) continue;
+      const data = { ...d };
+      await write(() => store.db.doc(`${store.base}/${col}/${d.id}`).set(data), () => { const m = localMap(col); m[d.id] = data; lsSet(col, m); });
+      n++;
+    }
+  }
+  return n;
+}

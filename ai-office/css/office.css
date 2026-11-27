@@ -461,3 +461,16 @@ body.teamboard #board-agent { display: none; }
 .bchip.wait { background: rgba(255,209,102,.12); border-color: rgba(255,209,102,.4); color: #ffe3a1; }
 .bchip.late { background: rgba(229,72,77,.12); border-color: rgba(229,72,77,.4); color: #ffb4b6; }
 .doc.brief { line-height: 1.9; }
+
+/* ===================================================== Standalone login */
+.auth { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at 50% 30%, rgba(61,107,255,.25), transparent 60%), rgba(5,8,22,.92); backdrop-filter: blur(6px); }
+.authbox { width: min(400px, 100%); padding: 24px 22px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px; text-align: start; }
+.authbox h1 { margin: 0; font: 700 22px var(--font-display, inherit); }
+.authlogo { width: 44px; height: 44px; color: #7b96ff; filter: drop-shadow(0 0 10px rgba(123,150,255,.7)); }
+.authtabs button { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 600 13px var(--font-body, inherit); cursor: pointer; }
+.authtabs button[aria-pressed="true"] { background: rgba(61,107,255,.22); color: #fff; border-color: var(--blue, #3d6bff); }
+#auth-form { display: flex; flex-direction: column; gap: 10px; }
+#auth-form .btn.primary, #np-form .btn.primary { padding: 10px; font-size: 14px; }
+#auth-msg:empty, #np-msg:empty { display: none; }
+.settings .account { align-items: center; }
+.settings .account .muted { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; direction: ltr; text-align: start; }
