@@ -8,7 +8,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v));
 const withTimeout = (p, ms = 10000) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
 
 // collections and how many of the newest documents to load
-export const COLS = { agents: 60, chats: 60, meetings: 12, tasks: 200, files: 200, events: 300, notes: 100, floors: 12, agentstate: 80, goals: 40, approvals: 80 };
+export const COLS = { agents: 60, chats: 60, meetings: 12, tasks: 200, files: 200, events: 300, notes: 100, floors: 12, agentstate: 80, goals: 40, approvals: 80, replay: 24 };
 
 export function saveState(text, ok = true) {
   const s = $('save-state'); if (!s) return;

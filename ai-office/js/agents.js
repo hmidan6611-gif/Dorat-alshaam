@@ -241,6 +241,7 @@ export function moodOf(ag) {
 export const nudgeMood = (ag, v) => { ag.moodBoost = Math.max(-30, Math.min(30, ag.moodBoost + v)); };
 
 export function showBubble(ag, text, ms = 3200) {
+  emit('bubble', ag, text);
   ag.bubble.textContent = text; ag.bubble.classList.add('on');
   clearTimeout(ag.bubbleTimer); ag.bubbleTimer = setTimeout(() => ag.bubble.classList.remove('on'), ms);
 }
@@ -296,6 +297,7 @@ onFrame((dt, t) => {
   const T = now(), night = dayPart() === 'night' ? 1.3 : 1;
   S.agents.forEach((o, k) => {
     const mv = o.mv, desk = mv.state === 'desk', w = (o.a.working || !!o.task) && desk;
+    if (!S.replay) { // during a replay the recording drives the robots
     if (mv.state === 'stand') { mv.sitting = false; if (T - mv.t0 > 0.4) startLeg(o); }
     else if (mv.state === 'walk') { stepWalk(o, dt); maybeGreet(o, T); }
     else if (mv.state === 'away') { turnTo(o.robot, mv.face, dt, 6); if (T > mv.until) goHome(o); }
@@ -351,6 +353,7 @@ onFrame((dt, t) => {
     o.eyes.forEach(e => { e.scale.y = blink; });
     o.antennas.forEach(a => { a.material.opacity = (tired ? 0.3 : 0.6) + 0.4 * Math.sin(t * 3 + k); });
 
+    }
     // office ring and screen
     const P = o.parts;
     const lvl = (w ? 0.6 : 0.3) * (desk ? 1 : 0.55) + 0.15 * Math.sin(t * 2 + k) + o.selA * 0.5 + o.boost;

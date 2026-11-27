@@ -7,6 +7,7 @@ import { makeAgent, removeAgent, bindOffice, goBreak, goHome, atDesk, onBreakCou
 import { buildFloor, setView, floorById, drawObj, undrawObj, saveFloor, findOfficeSpot, FL } from './floors.js';
 import { initGoals, restoreGoals, openNewGoal } from './goals.js';
 import { initApprovals, restoreApprovals } from './approvals.js';
+import { initReplay, restoreReplay } from './replay.js';
 import { initIntegrations } from './integrations.js';
 import './phone.js';
 import { defaultMainObjects } from './layout.js';
@@ -85,7 +86,7 @@ $('tab-office').onclick = () => setTab('office');
 $('tab-tasks').onclick = () => setTab('tasks');
 $('tab-meet').onclick = () => setTab('meet');
 $('tab-dash').onclick = () => setTab('dash');
-$('replay').onclick = () => { if (!S.meeting.running) { select(null); runBuild(); } };
+
 $('chat-close').onclick = () => select(null);
 $('board-close').onclick = () => setTab('office');
 
@@ -240,6 +241,7 @@ async function restore() {
   S.notes = data.notes.filter(n => typeof n.text === 'string');
   S.goals = (data.goals || []).filter(g => typeof g.text === 'string' && Array.isArray(g.taskIds));
   S.approvals = (data.approvals || []).filter(a => typeof a.title === 'string');
+  restoreReplay(data.replay);
   restoreTasks(); restoreGoals(); restoreApprovals(); restoreLog(); renderNotes(); renderTeam(); renderFloorsUI();
   if (S.focused) openAgentPanel(S.focused);
   if (S.panel === 'meet' && !S.meeting.running) renderMeetHome();
@@ -256,6 +258,7 @@ initPanel();
 initBoard();
 initGoals();
 initApprovals();
+initReplay();
 initIntegrations();
 $('goal-new').onclick = openNewGoal;
 on('show-goals', () => setTab('tasks'));

@@ -50,8 +50,8 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       <span class="count on" id="sound-on" hidden>♪</span>
     </button>
-    <button class="iconbtn" id="replay" title="إعادة بناء المكتب" aria-label="إعادة بناء المكتب">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    <button class="iconbtn" id="replay" title="إعادة اليوم: شاهد ما حدث في المكتب" aria-label="إعادة اليوم">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
     </button>
   </div>
 </div>
@@ -172,6 +172,13 @@
   <ul id="notes-list"></ul>
 </section>
 <div id="modal-root"></div>
+<section class="replaybar glass" id="replay-bar" hidden aria-label="إعادة اليوم">
+  <div class="rp-top"><b>إعادة اليوم</b><span class="muted" id="rp-time"></span><span class="rp-info" id="rp-info"></span>
+    <div class="seg" id="rp-speeds"><button class="btn" data-s="1" aria-pressed="true">1x</button><button class="btn" data-s="2" aria-pressed="false">2x</button><button class="btn" data-s="4" aria-pressed="false">4x</button></div>
+    <button class="btn primary" id="rp-play" type="button" aria-label="تشغيل أو إيقاف">❚❚</button>
+    <button class="btn" id="rp-exit" type="button">العودة للمباشر</button></div>
+  <div class="rp-track"><div class="rp-marks" id="rp-marks"></div><input type="range" id="rp-range" aria-label="الوقت"></div>
+</section>
 <div class="talkpop glass" id="talk-pop" hidden><i></i><span id="talk-text"></span></div>
 <section class="settings glass" id="settings-pop" hidden aria-label="الإعدادات">
   <header><b>الإعدادات</b><button class="iconbtn" id="settings-close" aria-label="إغلاق الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
@@ -183,7 +190,7 @@
       <option value="auto">تلقائي حسب سرعة الجهاز</option><option value="high">عالية: ظلال ناعمة وانعكاسات</option>
       <option value="balanced">متوازنة</option><option value="low">منخفضة: أسرع</option></select></label>
     <span class="muted" id="set-q-now"></span>
-    <div class="row phone-only"><button class="btn" id="set-cam" type="button">وضع المدير</button><button class="btn" id="set-edit" type="button">تحرير المكتب</button><button class="btn" id="set-replay" type="button">إعادة البناء</button></div>
+    <div class="row phone-only"><button class="btn" id="set-cam" type="button">وضع المدير</button><button class="btn" id="set-edit" type="button">تحرير المكتب</button><button class="btn" id="set-timeline" type="button">إعادة اليوم</button><button class="btn" id="set-replay" type="button">إعادة البناء</button></div>
   </div>
 </section>
 <section class="dash glass" id="dash" hidden aria-label="الإحصائيات">

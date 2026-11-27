@@ -2,6 +2,8 @@
 import { $, on } from './util.js';
 import { setAudio, audioPrefs } from './audio.js';
 import { setQuality, qualityMode, currentLevel, fps } from './quality.js';
+import { runBuild } from './scene.js';
+import { openReplay } from './replay.js';
 
 const LABEL = { low: 'منخفضة', balanced: 'متوازنة', high: 'عالية' };
 function sync() {
@@ -21,7 +23,8 @@ export function initSettings() {
   $('set-quality').onchange = e => { setQuality(e.target.value); sync(); };
   $('set-cam').onclick = () => { $('cam-btn').click(); pop.hidden = true; };
   $('set-edit').onclick = () => { $('edit-btn').click(); pop.hidden = true; };
-  $('set-replay').onclick = () => { $('replay').click(); pop.hidden = true; };
+  $('set-replay').onclick = () => { runBuild(); pop.hidden = true; };
+  $('set-timeline').onclick = () => { pop.hidden = true; openReplay(); };
   on('fps', () => { if (!pop.hidden) sync(); });
   on('quality-changed', () => { if (!pop.hidden) sync(); });
   // sounds were on last time: they resume on the first tap anywhere (browsers need a gesture)
