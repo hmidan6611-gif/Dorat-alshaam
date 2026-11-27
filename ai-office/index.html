@@ -1,0 +1,238 @@
+<title>Deskhive AI Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/office.css">
+
+<script>document.documentElement.dir = "rtl"; document.documentElement.lang = "ar";</script>
+<div id="scene"></div>
+<div id="labels"></div>
+<div id="flash"></div>
+<div id="err">متصفحك لا يدعم WebGL، لذلك لا يمكن رسم المكتب ثلاثي الأبعاد.</div>
+
+<div class="topbar glass">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#3d6bff"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" fill="#e9edff"/></svg>
+    <span>خلية المكتب</span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-office" aria-selected="true">المكتب</button>
+    <button role="tab" id="tab-tasks" aria-selected="false">المهام</button>
+    <button role="tab" id="tab-meet" aria-selected="false">اجتماع</button>
+    <button role="tab" id="tab-dash" aria-selected="false">الإحصائيات</button>
+  </div>
+  <div class="stats">
+    <span class="opt"><i class="dot"></i> <b id="st-working">5</b> يعمل</span>
+    <span class="opt"><b id="st-tasks">216</b> مهمة اليوم</span>
+    <button class="iconbtn daybtn" id="daybtn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <span id="daytext">صباح 09:00</span>
+    </button>
+    <button class="iconbtn" id="talk-btn" hidden title="تكلّم مع وكيل بصوتك" aria-label="تكلّم مع وكيل بصوتك">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
+    <button class="iconbtn bell" id="inbox-btn" title="صندوق الموافقات" aria-label="صندوق الموافقات">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/></svg>
+      <span class="count" id="inbox-count" hidden>0</span>
+    </button>
+    <button class="iconbtn bell" id="bell" aria-label="الإشعارات" title="الإشعارات">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/></svg>
+      <span class="count" id="bell-count" hidden>0</span>
+    </button>
+    <button class="iconbtn" id="cam-btn" aria-pressed="false" title="وضع المدير: كاميرا حرة" aria-label="وضع المدير: كاميرا حرة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3l2-3h8l2 3h3v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <button class="iconbtn" id="edit-btn" aria-pressed="false" title="تحرير المكتب" aria-label="تحرير المكتب">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+    </button>
+    <button class="iconbtn bell" id="settings-btn" title="الإعدادات: الصوت والجودة" aria-label="الإعدادات: الصوت والجودة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span class="count on" id="sound-on" hidden>♪</span>
+    </button>
+    <button class="iconbtn" id="replay" title="إعادة اليوم: شاهد ما حدث في المكتب" aria-label="إعادة اليوم">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<aside class="team glass" aria-label="فريقك">
+  <h2><span id="team-title">فريقك</span><span class="save off" id="save-state"></span></h2>
+  <input class="search" id="team-search" type="search" placeholder="ابحث عن وكيل أو تخصص أو حالة" aria-label="بحث في الوكلاء">
+  <ul id="team"></ul>
+  <ul class="log" id="log" hidden></ul>
+</aside>
+
+<!-- agent panel: overview, chat, work log, files -->
+<section class="chat glass" id="chat" aria-label="لوحة الوكيل">
+  <header>
+    <div class="ava" id="chat-ava"><i></i></div>
+    <div class="who"><b id="chat-name">سيج</b><span id="chat-role">قائد الدعم · متصل</span></div>
+    <span class="mode" id="ai-mode">Claude</span>
+    <button class="iconbtn" id="tts-toggle" aria-pressed="false" title="قراءة الردود بصوت مسموع" aria-label="قراءة الردود بصوت مسموع" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+    <button class="iconbtn" id="chat-close" aria-label="إغلاق اللوحة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="ptabs" role="tablist" id="ptabs">
+    <button role="tab" data-tab="overview" aria-selected="true">نظرة عامة</button>
+    <button role="tab" data-tab="chat" aria-selected="false">محادثة</button>
+    <button role="tab" data-tab="log" aria-selected="false">السجل</button>
+    <button role="tab" data-tab="files" aria-selected="false">الملفات</button>
+    <button role="tab" data-tab="memory" aria-selected="false">الذاكرة</button>
+  </div>
+  <div class="ptab" id="pt-overview"><div class="pane" id="ov"></div></div>
+  <div class="ptab" id="pt-chat" hidden>
+    <div class="row" style="padding:8px 12px 0;justify-content:flex-end">
+      <button class="btn" id="chat-clear" type="button">مسح المحادثة</button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="chips" id="chips"></div>
+    <form class="send" id="send">
+      <input id="msg-input" autocomplete="off" placeholder="اكتب رسالة لوكيلك">
+      <button type="button" class="mic" id="mic" aria-label="تحدّث بدل الكتابة" title="تحدّث بدل الكتابة" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <button type="submit" id="send-btn" aria-label="إرسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+    </form>
+  </div>
+  <div class="ptab" id="pt-log" hidden><div class="pane" id="agent-log"></div></div>
+  <div class="ptab" id="pt-files" hidden><div class="pane" id="agent-files"></div></div>
+  <div class="ptab" id="pt-memory" hidden><div class="pane" id="agent-memory"></div></div>
+</section>
+
+<!-- kanban board -->
+<section class="board glass" id="board" aria-label="لوحة المهام">
+  <header>
+    <h2>لوحة المهام</h2>
+    <span class="muted" id="board-hint">اسحب المهمة من ⠿ وأفلتها على روبوت أو على اسم وكيل</span>
+    <button class="btn" id="projects-btn" type="button">المشاريع</button>
+    <button class="btn" id="routines-btn" type="button">متكررة</button>
+    <button class="btn gold" id="goal-new" type="button">هدف للمدير</button>
+    <button class="btn primary" id="task-new" type="button">+ مهمة جديدة</button>
+    <button class="iconbtn" id="board-close" aria-label="إغلاق لوحة المهام">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="goals" id="goals" hidden></div>
+  <div class="bfilter">
+    <input class="search" id="board-q" type="search" placeholder="ابحث في المهام" aria-label="بحث في المهام">
+    <select id="board-agent" aria-label="فلترة حسب الوكيل"><option value="">كل الوكلاء</option></select>
+    <select id="board-project" aria-label="فلترة حسب المشروع" hidden><option value="">كل المشاريع</option></select>
+    <select id="board-scope" aria-label="أي لوحة" hidden><option value="mine">مهامي</option><option value="team">لوحة الفريق</option></select>
+    <button class="btn" id="team-share" type="button" aria-pressed="false" hidden>شارك لوحتي مع الفريق</button>
+  </div>
+  <p class="team-note" id="team-note" hidden></p>
+  <div class="cols" id="cols"></div>
+</section>
+
+<!-- team meeting -->
+<section class="chat glass tall" id="meet" aria-label="اجتماع الفريق">
+  <header>
+    <div class="ava" style="--c:#9d7bff"><i></i></div>
+    <div class="who"><b>اجتماع الفريق</b><span>كل الوكلاء يناقشون مهمة واحدة</span></div>
+    <button class="iconbtn" id="meet-close" aria-label="إغلاق الاجتماع">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="pane" id="meet-pane"></div>
+</section>
+
+<!-- new agent -->
+<section class="chat glass tall" id="new" aria-label="وكيل جديد">
+  <header>
+    <div class="ava" id="new-ava" style="--c:#22d3ee"><i></i></div>
+    <div class="who"><b>وكيل جديد</b><span>يظهر روبوت جديد على مكتب في المشهد</span></div>
+    <button class="iconbtn" id="new-close" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <form class="pane" id="new-form">
+    <label class="field">الاسم<input id="new-name" maxlength="16" required placeholder="مثلاً: ريم"></label>
+    <label class="field">التخصص<input id="new-role" maxlength="30" required placeholder="مثلاً: مسوّقة محتوى"></label>
+    <label class="field">ماذا يعمل؟ (اختياري)<textarea id="new-desc" rows="3" maxlength="240" placeholder="مثلاً: تكتب منشورات إنستغرام وتخطط لحملات المتجر الشهرية"></textarea></label>
+    <div class="field">الجنس
+      <div class="seg">
+        <label><input type="radio" name="new-gender" id="new-gender-f" value="f" checked><span>أنثى</span></label>
+        <label><input type="radio" name="new-gender" id="new-gender-m" value="m"><span>ذكر</span></label>
+      </div>
+    </div>
+    <label class="field">الشخصية<select id="new-personality"></select></label>
+    <div class="field">الصوت
+      <div class="row"><select id="new-voice"></select><button type="button" class="btn" id="new-voice-try">▶ جرّب الصوت</button></div>
+    </div>
+    <div class="field">شكل الرأس<div id="new-head"></div></div>
+    <div class="field">الهوائي<div id="new-ant"></div></div>
+    <div class="field">إكسسوار<div id="new-acc"></div></div>
+    <div class="field">اللون<div class="swatches" id="new-colors"></div></div>
+    <label class="field">الطابق<select id="new-floor"></select></label>
+    <div class="status" id="new-status"></div>
+    <div class="row"><button type="submit" class="btn primary" id="new-submit">أضف إلى المكتب</button></div>
+  </form>
+</section>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<section class="notes glass" id="notes" hidden aria-label="الإشعارات">
+  <header><b>الإشعارات</b><button class="btn" id="notes-read" type="button">تعليم الكل كمقروء</button>
+    <button class="iconbtn" id="notes-close" aria-label="إغلاق الإشعارات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <ul id="notes-list"></ul>
+</section>
+<div id="modal-root"></div>
+<section class="replaybar glass" id="replay-bar" hidden aria-label="إعادة اليوم">
+  <div class="rp-top"><b>إعادة اليوم</b><span class="muted" id="rp-time"></span><span class="rp-info" id="rp-info"></span>
+    <div class="seg" id="rp-speeds"><button class="btn" data-s="1" aria-pressed="true">1x</button><button class="btn" data-s="2" aria-pressed="false">2x</button><button class="btn" data-s="4" aria-pressed="false">4x</button></div>
+    <button class="btn primary" id="rp-play" type="button" aria-label="تشغيل أو إيقاف">❚❚</button>
+    <button class="btn" id="rp-exit" type="button">العودة للمباشر</button></div>
+  <div class="rp-track"><div class="rp-marks" id="rp-marks"></div><input type="range" id="rp-range" aria-label="الوقت"></div>
+</section>
+<div class="talkpop glass" id="talk-pop" hidden><i></i><span id="talk-text"></span></div>
+<section class="settings glass" id="settings-pop" hidden aria-label="الإعدادات">
+  <header><b>الإعدادات</b><button class="iconbtn" id="settings-close" aria-label="إغلاق الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="pane">
+    <label class="check"><input type="checkbox" id="set-sfx">أصوات المكتب: كيبورد، خطوات، قهوة</label>
+    <label class="check"><input type="checkbox" id="set-music">موسيقى مكتب هادئة</label>
+    <label class="field">مستوى الصوت<input type="range" id="set-vol" min="0" max="100" step="5"></label>
+    <div class="row"><button class="btn" id="set-store" type="button">متجر الوكلاء</button><button class="btn" id="set-plans" type="button">الاشتراك</button><button class="btn" id="set-invite" type="button">ادعُ زملاءك</button></div>
+    <button class="btn gold" id="set-kb" type="button">ملف الشركة والمعرفة</button>
+    <div class="row"><button class="btn" id="set-export" type="button">صدّر بياناتي</button><button class="btn" id="set-import" type="button">استورد بيانات</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
+    <div class="row account" id="set-account" hidden><span class="muted" id="set-account-email"></span><button class="btn" id="set-logout" type="button">تسجيل الخروج</button></div>
+    <button class="btn" id="set-services" type="button">الخدمات المربوطة: Gmail وDrive والمكالمات</button>
+    <label class="field">سطوع المكتب <span class="muted" id="set-bright-v"></span><input type="range" id="set-bright" min="60" max="160" step="5"></label>
+    <label class="field">لون الإضاءة<select id="set-warmth"><option value="warm">دافئ</option><option value="neutral">محايد</option><option value="cool">بارد</option></select></label>
+    <label class="field">ثيم المكتب<select id="set-theme"></select></label>
+    <label class="check"><input type="checkbox" id="set-brief">إيجاز من المدير أول كل يوم</label>
+    <label class="field">جودة الرسوم<select id="set-quality">
+      <option value="auto">تلقائي حسب سرعة الجهاز</option><option value="high">عالية: ظلال ناعمة وانعكاسات</option>
+      <option value="balanced">متوازنة</option><option value="low">منخفضة: أسرع</option></select></label>
+    <span class="muted" id="set-q-now"></span>
+    <div class="row phone-only"><button class="btn" id="set-cam" type="button">وضع المدير</button><button class="btn" id="set-edit" type="button">تحرير المكتب</button><button class="btn" id="set-timeline" type="button">إعادة اليوم</button><button class="btn" id="set-replay" type="button">إعادة البناء</button></div>
+  </div>
+</section>
+<section class="dash glass" id="dash" hidden aria-label="الإحصائيات">
+  <header><h2>الإحصائيات</h2><span class="muted">إنتاجية الفريق ووقت العمل. لا تشمل التكلفة لأن الصفحة لا تعرف استهلاكك الفعلي.</span>
+    <button class="iconbtn" id="dash-close" aria-label="إغلاق الإحصائيات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <div class="dash-body" id="dash-body"></div>
+</section>
+<div class="dtip" id="dash-tip" hidden></div>
+<div class="follow glass" id="follow-chip" hidden><i></i>تتابع الكاميرا: <b id="follow-name"></b><button class="btn" id="follow-stop" type="button">إيقاف</button></div>
+<div class="camhint glass" id="cam-hint" hidden>وضع المدير: اسحب للتدوير، اسحب بزر الفأرة الأيمن أو بإصبعين للتحريك، الأسهم أو WASD للتنقل، ضغطتان على وكيل لمتابعته</div>
+
+<nav class="floors glass" id="floors" aria-label="الطوابق"></nav>
+<div class="people glass" id="people" hidden></div>
+<section class="editbar glass" id="editbar" hidden aria-label="محرر المكتب">
+  <div class="edit-top"><b>محرر المكتب</b><span class="muted" id="edit-hint"></span><button class="btn primary" id="edit-done" type="button">تم</button></div>
+  <div class="edit-row" id="edit-sel"></div>
+  <div class="edit-row" id="edit-palette"></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="js/standalone.js"></script>
+<script type="module" src="js/main.js"></script>
