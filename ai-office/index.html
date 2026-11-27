@@ -1,0 +1,829 @@
+<title>Deskhive AI Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: full-bleed WebGL office; floating glass panels (top bar, team list left, agent chat right / bottom sheet on phones). */
+:root {
+  color-scheme: dark;
+  --bg: #050816;
+  --panel: rgba(13, 19, 42, 0.78);
+  --panel-solid: #0d132a;
+  --line: rgba(130, 155, 255, 0.16);
+  --fg: #e9edff;
+  --muted: #8790b6;
+  --accent: #ff8a3d;
+  --blue: #3d6bff;
+  --good: #34e08a;
+  --idle: #ffc53d;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --top: env(safe-area-inset-top, 0px);
+  --bot: env(safe-area-inset-bottom, 0px);
+  --gl: max(16px, env(safe-area-inset-left, 0px));
+  --gr: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
+#scene { position: fixed; inset: 0; }
+#scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.glass { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 14px; }
+
+/* top bar */
+.topbar { position: fixed; z-index: 5; top: calc(var(--top) + 12px); left: var(--gl); right: var(--gr); height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: .01em; }
+.brand svg { width: 22px; height: 22px; }
+.tabs { display: flex; gap: 4px; background: rgba(255,255,255,.04); padding: 3px; border-radius: 10px; }
+.tabs button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--blue); color: #fff; box-shadow: 0 0 18px rgba(61,107,255,.55); }
+.stats { margin-left: auto; display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 500; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); display: inline-block; }
+.iconbtn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.03); display: grid; place-items: center; }
+.iconbtn svg { width: 15px; height: 15px; }
+
+/* team list */
+.team { position: fixed; z-index: 4; left: var(--gl); top: calc(var(--top) + 72px); width: 224px; padding: 12px 8px; }
+.team h2 { margin: 0 8px 8px; font: 600 10.5px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.team ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.member { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; text-align: left; }
+.member:hover { background: rgba(255,255,255,.04); }
+.member[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+.ava { flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--c); display: grid; place-items: center; box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent); }
+.ava i { display: block; width: 18px; height: 10px; border-radius: 4px; background: #0b1024; position: relative; }
+.ava i::before, .ava i::after { content: ""; position: absolute; top: 3px; width: 4px; height: 4px; border-radius: 50%; background: #cdf0ff; }
+.ava i::before { left: 4px; } .ava i::after { right: 4px; }
+.who { min-width: 0; flex: 1; }
+.who b { display: block; font-size: 13px; font-weight: 600; }
+.who span { display: block; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge { font-size: 9.5px; font-weight: 600; letter-spacing: .04em; padding: 3px 6px; border-radius: 6px; color: #06120c; background: var(--good); }
+.badge.idle { background: var(--idle); color: #1d1500; }
+
+/* output log (Output tab) */
+.log { list-style: none; margin: 0; padding: 0 4px; display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; }
+.log li { font-size: 12px; line-height: 1.4; padding: 8px; border-radius: 8px; background: rgba(255,255,255,.035); border-left: 2px solid var(--c); }
+.log time { display: block; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-bottom: 2px; }
+
+/* chat */
+.chat { position: fixed; z-index: 6; right: var(--gr); top: calc(var(--top) + 72px); bottom: calc(var(--bot) + 16px); width: 330px; display: flex; flex-direction: column; transform: translateX(calc(100% + 40px)); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.chat.open { transform: none; }
+.chat header { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
+.chat header .who b { font-size: 14px; }
+.msgs { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 86%; font-size: 13px; line-height: 1.45; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.06); align-self: flex-start; overflow-wrap: anywhere; }
+.msg.me { align-self: flex-end; background: var(--blue); color: #fff; }
+.typing span { display: inline-block; width: 5px; height: 5px; margin: 0 1.5px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+.typing span:nth-child(2) { animation-delay: .15s; } .typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 50% { opacity: .2; } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
+.chips button { border: 1px solid var(--line); background: rgba(255,255,255,.04); border-radius: 999px; padding: 6px 10px; font-size: 11.5px; }
+.chips button:hover { border-color: var(--c); }
+form.send { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+form.send input { flex: 1; min-width: 0; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; color: var(--fg); font: 13px var(--font-body); }
+form.send button { border: 0; width: 38px; border-radius: 10px; background: var(--blue); display: grid; place-items: center; }
+form.send svg { width: 16px; height: 16px; }
+
+/* world-anchored labels */
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.tag { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; will-change: transform; }
+.pill { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(8,12,28,.85); border: 1px solid color-mix(in srgb, var(--c) 60%, transparent); }
+.pill .dot { width: 6px; height: 6px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.bubble { font-size: 10.5px; padding: 4px 9px; border-radius: 8px; background: rgba(8,12,28,.9); border: 1px solid var(--line); white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; }
+.bubble.on { opacity: 1; transform: none; }
+
+#flash { position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0; mix-blend-mode: screen; }
+.hint { position: fixed; z-index: 3; left: 50%; bottom: calc(var(--bot) + 20px); transform: translateX(-50%); font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+#err { position: fixed; inset: 0; display: none; place-items: center; padding: 24px; text-align: center; color: var(--muted); z-index: 9; }
+
+/* phones: team becomes a strip at the bottom, chat becomes a bottom sheet */
+@media (max-width: 760px) {
+  .stats .opt { display: none; }
+  .topbar { gap: 8px; padding: 0 8px; }
+  .brand span { display: none; }
+  .tabs button { padding: 6px 9px; }
+  .team { top: auto; bottom: calc(var(--bot) + 12px); right: var(--gr); width: auto; padding: 8px; }
+  .team h2 { display: none; }
+  .team ul { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .member { width: auto; flex: none; padding: 5px 8px; }
+  .member .who span, .member .badge { display: none; }
+  .log { max-height: 30vh; }
+  .chat { top: auto; left: var(--gl); width: auto; height: 56%; bottom: calc(var(--bot) + 12px); transform: translateY(calc(100% + 40px)); }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .chat, .bubble { transition: none; } }
+</style>
+
+<div id="scene"></div>
+<div id="labels"></div>
+<div id="flash"></div>
+<div id="err">WebGL is not available in this browser, so the 3D office cannot be drawn.</div>
+
+<div class="topbar glass">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2 21 7v10l-9 5-9-5V7z" fill="#3d6bff"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" fill="#e9edff"/></svg>
+    <span>Deskhive</span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-office" aria-selected="true">Office</button>
+    <button role="tab" id="tab-hive" aria-selected="false">Hive</button>
+    <button role="tab" id="tab-output" aria-selected="false">Output</button>
+  </div>
+  <div class="stats">
+    <span><i class="dot"></i> <b id="st-working">5</b><span class="opt"> working</span></span>
+    <span class="opt"><b id="st-tasks">216</b> tasks today</span>
+    <span class="opt" id="st-clock">09:41</span>
+    <button class="iconbtn" id="replay" title="Rebuild the office" aria-label="Rebuild the office">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    </button>
+  </div>
+</div>
+
+<aside class="team glass" aria-label="Your team">
+  <h2 id="team-title">Your team</h2>
+  <ul id="team"></ul>
+  <ul class="log" id="log" hidden></ul>
+</aside>
+
+<section class="chat glass" id="chat" aria-label="Agent chat">
+  <header>
+    <div class="ava" id="chat-ava"><i></i></div>
+    <div class="who"><b id="chat-name">Sage</b><span id="chat-role">Support lead · online</span></div>
+    <button class="iconbtn" id="chat-close" aria-label="Close chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+  <div class="msgs" id="msgs"></div>
+  <div class="chips" id="chips"></div>
+  <form class="send" id="send">
+    <input id="msg-input" autocomplete="off" placeholder="Message your agent">
+    <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg></button>
+  </form>
+</section>
+
+<div class="hint">Drag to rotate · scroll to zoom · click a robot</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const gsap = window.gsap;
+gsap.defaults({ overwrite: 'auto' });
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const D = s => (REDUCED ? 0.001 : s);          // duration helper
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+
+/* ------------------------------------------------------------------ data */
+const AGENTS = [
+  { name: 'Mira', role: 'Research analyst', color: '#ff8a3d', working: true,
+    tasks: ['Reading 12 papers', 'Comparing 5 vendors', 'Writing market brief'],
+    intro: 'Mira on research. I read papers, reports and competitor sites, then hand you a short brief with sources.',
+    chips: { 'Summarize this week': 'Three things moved this week: two competitors cut prices, a new EU rule lands in March, and search interest in our category is up 14%. Full brief is in Output.',
+             'Find 3 competitors': 'On it. Shortlist so far: Brightdesk, Loopwise and Pallet. I will add pricing and team size for each.' } },
+  { name: 'Otto', role: 'Code reviewer', color: '#4d7cff', working: true,
+    tasks: ['Reviewing PR #482', 'Running test suite', 'Flagging 2 regressions'],
+    intro: 'Otto on code review. I read every pull request, run the tests and leave comments before anything merges.',
+    chips: { 'What is blocking merge?': 'PR #482 has one failing test in checkout and a missing null check in the cart service. Everything else is green.',
+             'Review my latest PR': 'Pulled it. Logic looks fine. I left 3 comments: one naming nit, one unused import, one race condition worth fixing.' } },
+  { name: 'Nova', role: 'Product designer', color: '#b06bff', working: true,
+    tasks: ['Sketching onboarding', 'Exporting 8 icons', 'Tidying the style guide'],
+    intro: 'Nova on design. I sketch flows, keep the style guide tidy and export assets for the team.',
+    chips: { 'Show onboarding ideas': 'I have two directions: a 3-step checklist, and a guided tour that starts with sample data. I prefer the second.',
+             'Export app icons': 'Exporting 8 sizes now, from 16px to 1024px. They will show up in Output in a minute.' } },
+  { name: 'Sage', role: 'Support lead', color: '#2fe08a', working: true,
+    tasks: ['Triaging 17 tickets', 'Drafting refund reply', 'Tagging urgent emails'],
+    intro: 'Sage on support. I triage tickets, draft replies and flag anything angry or urgent.',
+    chips: { 'Any urgent tickets?': 'Two. A customer was charged twice on order #7731, and a login outage report from a team of 40. Both are pinned at the top.',
+             'Draft a refund reply': 'Draft ready: "Sorry for the double charge. We refunded $48 to your card today; it can take 3-5 days to appear." Want me to send it?' } },
+  { name: 'Pip', role: 'Finance assistant', color: '#ffc53d', working: false,
+    tasks: ['Reconciling invoices', 'Sorting 40 expenses', 'Checking payroll'],
+    intro: 'Pip on finance. I reconcile invoices, sort expenses and warn you before a bill is late. I am idle right now.',
+    chips: { 'Reconcile invoices': 'Waking up. 23 invoices this month, 21 match the bank feed. Two from Acme are missing, I will chase them.',
+             'Monthly spend?': 'November spend is $18,420, 6% under budget. Software is the biggest line at $5,100.' } },
+  { name: 'Juno', role: 'Operations planner', color: '#ff5c8a', working: true,
+    tasks: ['Planning sprint 14', 'Booking supplier call', 'Updating roadmap'],
+    intro: 'Juno on operations. I plan sprints, book meetings and keep the roadmap current.',
+    chips: { 'Plan next sprint': 'Sprint 14 draft: 9 tickets, 31 points, ends Dec 11. Otto flagged one risky migration, so I left buffer.',
+             'Who is overloaded?': 'Sage is at 140% of normal ticket volume today. I suggest moving the refund queue to Pip for the afternoon.' } },
+];
+const STATIONS = [[-4, -4.2], [0.6, -4.2], [-4, -0.1], [0.6, -0.1], [-4, 4], [0.6, 4]];
+const CORE_POS = new THREE.Vector3(5.1, 2.3, 0.2);
+const BASE_CORE = new THREE.Color('#9d7bff');
+
+/* --------------------------------------------------------------- renderer */
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
+catch (e) { $('err').style.display = 'grid'; throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+$('scene').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#050816');
+const world = new THREE.Group();
+scene.add(world);
+
+/* camera: orthographic = true isometric look */
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+camera.position.set(20, 17, 20);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minPolarAngle = 0.55; controls.maxPolarAngle = 1.15;
+controls.minAzimuthAngle = 0.1; controls.maxAzimuthAngle = 1.45;
+controls.minZoom = 0.6; controls.maxZoom = 3;
+controls.target.set(0, 0.5, 0);
+const camOffset = new THREE.Vector3();
+
+/* shared animated state (tweened by gsap) */
+const V = { storm: 0, focus: 0, shift: 0, ignite: 0, shake: 0 };
+
+/* --------------------------------------------------------------- lights */
+scene.add(new THREE.HemisphereLight('#8ea6ff', '#0a0f25', 0.9));
+const sun = new THREE.DirectionalLight('#ffe2c4', 1.4);
+sun.position.set(9, 16, 7);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 50 });
+sun.shadow.bias = -0.0005;
+sun.shadow.camera.updateProjectionMatrix();
+scene.add(sun);
+const windowLight = new THREE.PointLight('#8fb7ff', 18, 14, 2);
+windowLight.position.set(-6.5, 4, -6);
+scene.add(windowLight);
+
+/* --------------------------------------------------------------- helpers */
+const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.1, ...o });
+const glow = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+function mesh(geo, mat, x = 0, y = 0, z = 0, parent = world) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+const BUILD = []; // everything that animates in during the build sequence
+const build = (obj, kind, delay = 0) => { obj.userData.home = obj.position.clone(); obj.userData.scaleHome = obj.scale.clone(); BUILD.push({ obj, kind, delay }); return obj; };
+
+/* --------------------------------------------------------------- room */
+const floor = build(mesh(new THREE.BoxGeometry(16, 0.4, 16), std('#0b1332', { roughness: 0.85 }), 0, -0.2, 0), 'floor');
+{ // glowing tile grid
+  const pts = [];
+  for (let i = -8; i <= 8; i += 2) { pts.push(i, 0.011, -8, i, 0.011, 8, -8, 0.011, i, 8, 0.011, i); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const grid = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#3d6bff', transparent: true, opacity: 0.35, toneMapped: false }));
+  floor.add(grid); grid.position.y = 0.2;
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(16, 0.4, 16)), new THREE.LineBasicMaterial({ color: '#6f8dff', toneMapped: false }));
+  floor.add(edge);
+}
+const tiles = []; // flickering floor tiles
+for (let i = 0; i < 9; i++) {
+  const t = mesh(new THREE.PlaneGeometry(1.9, 1.9), glow('#3d6bff', 0), -7 + ((Math.random() * 8) | 0) * 2, 0.012, -7 + ((Math.random() * 8) | 0) * 2);
+  t.rotation.x = -Math.PI / 2; t.castShadow = false; t.userData.phase = Math.random() * 10;
+  tiles.push(t);
+}
+
+function wall(w, h, d, x, z) {
+  const g = new THREE.BoxGeometry(w, h, d); g.translate(0, h / 2, 0);
+  return build(mesh(g, std('#121b3f', { roughness: 0.9 }), x, 0, z), 'wall');
+}
+const backWall = wall(16.3, 6, 0.3, -0.15, -8.15);
+const leftWall = wall(0.3, 6, 16, -8.15, 0);
+
+// windows: emissive panes with frames
+function windowPane(parent, w, h, x, y, z, rotY) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; parent.add(g);
+  mesh(new THREE.BoxGeometry(w + 0.16, h + 0.16, 0.06), std('#e8ecff', { roughness: 0.4 }), 0, 0, 0, g);
+  const pane = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: '#b9d2ff', toneMapped: false }), 0, 0, 0.04, g);
+  pane.material.color.multiplyScalar(1.1);
+  mesh(new THREE.BoxGeometry(0.05, h, 0.04), std('#e8ecff'), 0, 0, 0.06, g);
+  return g;
+}
+windowPane(backWall, 1.3, 3.2, 3.6, 3.3, 0.17, 0);
+windowPane(backWall, 1.3, 3.2, 5.5, 3.3, 0.17, 0);
+windowPane(leftWall, 1.1, 1.6, 0.17, 3.4, -5.6, Math.PI / 2);
+windowPane(leftWall, 1.1, 1.6, 0.17, 3.4, -3.4, Math.PI / 2);
+// wall art + shelf
+mesh(new THREE.BoxGeometry(0.9, 1.9, 0.06), std('#ff8a3d', { emissive: '#ff6a1a', emissiveIntensity: 0.25 }), -1.2, 4.2, 0.18, backWall);
+mesh(new THREE.BoxGeometry(2.6, 0.08, 0.5), std('#e8ecff'), -1.2, 2.25, 0.4, backWall);
+[['#ff5c8a', 0.45], ['#2fe08a', 0.35], ['#ffc53d', 0.55], ['#4d7cff', 0.4], ['#b06bff', 0.3]].forEach(([c, s], i) =>
+  build(mesh(new RoundedBoxGeometry(s, s, s, 2, 0.06), std(c), -2.2 + i * 0.5, 2.29 + s / 2, 0.4, backWall), 'pop', 0.9 + i * 0.05));
+mesh(new THREE.PlaneGeometry(1.2, 0.8), glow('#2fe08a', 0.8), 0.17, 3.6, 1.6, leftWall).rotation.y = Math.PI / 2;
+
+// plant
+{
+  const plant = new THREE.Group(); plant.position.set(-6.7, 0, -6.6); world.add(plant);
+  mesh(new THREE.CylinderGeometry(0.45, 0.35, 0.7, 24), std('#e8ecff'), 0, 0.35, 0, plant);
+  const leaf = std('#33c07a', { roughness: 0.5 });
+  [[0, 1.3, 0, .6], [.35, 1.9, .1, .45], [-.3, 1.8, -.1, .5], [.05, 2.4, 0, .4], [-.15, 1.0, .3, .35]].forEach(([x, y, z, r]) => mesh(new THREE.SphereGeometry(r, 20, 16), leaf, x, y, z, plant));
+  build(plant, 'drop', 0.7);
+}
+// sofa along the left wall
+{
+  const sofa = new THREE.Group(); sofa.position.set(-7.25, 0, 1.9); sofa.rotation.y = Math.PI / 2; world.add(sofa);
+  const blue = std('#2547d6', { roughness: 0.75 });
+  mesh(new RoundedBoxGeometry(3.2, 0.5, 1.1, 3, 0.12), blue, 0, 0.35, 0, sofa);
+  mesh(new RoundedBoxGeometry(3.2, 0.9, 0.3, 3, 0.12), blue, 0, 0.8, -0.42, sofa);
+  mesh(new RoundedBoxGeometry(0.3, 0.75, 1.1, 3, 0.12), blue, -1.6, 0.5, 0, sofa);
+  mesh(new RoundedBoxGeometry(0.3, 0.75, 1.1, 3, 0.12), blue, 1.6, 0.5, 0, sofa);
+  build(sofa, 'drop', 0.75);
+}
+
+/* --------------------------------------------------------------- stations */
+function screenTexture(color) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 320;
+  const g = c.getContext('2d');
+  g.fillStyle = '#0a1028'; g.fillRect(0, 0, 256, 320);
+  for (let y = 12; y < 320; y += 13) {
+    g.fillStyle = Math.random() < 0.3 ? color : 'rgba(200,215,255,.55)';
+    g.fillRect(14 + ((Math.random() * 3) | 0) * 16, y, rand(30, 170), 5);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 0.5);
+  return t;
+}
+
+const agentGroups = [];
+const hitMeshes = [];
+const deskMat = std('#1b2550', { roughness: 0.5 });
+const legMat = std('#0c1230');
+
+AGENTS.forEach((a, i) => {
+  const [x, z] = STATIONS[i];
+  const col = new THREE.Color(a.color);
+  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
+
+  // desk
+  const desk = new THREE.Group(); g.add(desk);
+  mesh(new RoundedBoxGeometry(2.5, 0.1, 1.2, 2, 0.04), deskMat, 0, 0.8, 0, desk);
+  [[-1.15, -0.5], [1.15, -0.5], [-1.15, 0.5], [1.15, 0.5]].forEach(([lx, lz]) => mesh(new THREE.BoxGeometry(0.06, 0.8, 0.06), legMat, lx, 0.4, lz, desk));
+  // laptop: base + lid facing the robot
+  mesh(new THREE.BoxGeometry(0.8, 0.035, 0.55), std('#cfd6f5', { metalness: 0.5, roughness: 0.3 }), 0, 0.87, -0.05, desk);
+  const lid = new THREE.Group(); lid.position.set(0, 0.885, 0.22); lid.rotation.set(-0.22, Math.PI, 0); desk.add(lid);
+  const tex = screenTexture(a.color);
+  mesh(new THREE.PlaneGeometry(0.74, 0.48), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0, 0.26, 0.012, lid);
+  mesh(new THREE.BoxGeometry(0.8, 0.52, 0.02), std('#cfd6f5', { metalness: 0.5, roughness: 0.3, emissive: col, emissiveIntensity: 0.08 }), 0, 0.26, 0, lid);
+  mesh(new THREE.CircleGeometry(0.05, 20), glow(a.color), 0, 0.28, -0.012, lid).rotation.y = Math.PI;
+  const screenLight = new THREE.PointLight(a.color, 1.2, 2.2, 2); screenLight.position.set(0, 1.25, -0.4); desk.add(screenLight);
+  mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.16, 16), std(i % 2 ? '#ffc53d' : '#e8ecff'), 0.85, 0.93, 0.25, desk); // mug
+  build(desk, 'drop', 0.9 + i * 0.12);
+
+  // chair
+  const chair = new THREE.Group(); chair.position.set(0, 0, -0.95); g.add(chair);
+  mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), legMat, 0, 0.21, 0, chair);
+  mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 20), legMat, 0, 0.02, 0, chair);
+  mesh(new RoundedBoxGeometry(0.85, 0.12, 0.8, 2, 0.05), std('#202a58'), 0, 0.48, 0, chair);
+
+  // robot
+  const robot = new THREE.Group(); robot.position.set(0, 0, -0.95); g.add(robot);
+  const shell = std(a.color, { roughness: 0.35, metalness: 0.25 });
+  const body = mesh(new RoundedBoxGeometry(0.78, 0.78, 0.58, 4, 0.2), shell, 0, 0.95, 0, robot);
+  const headPivot = new THREE.Group(); headPivot.position.set(0, 1.38, 0); robot.add(headPivot);
+  const head = mesh(new RoundedBoxGeometry(0.86, 0.64, 0.66, 4, 0.22), shell, 0, 0.36, 0, headPivot);
+  mesh(new RoundedBoxGeometry(0.66, 0.4, 0.06, 3, 0.1), std('#0a0f24', { roughness: 0.2, metalness: 0.6 }), 0, 0.36, 0.32, headPivot);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#c9f2ff').multiplyScalar(2.2), toneMapped: false });
+  const eyes = [-0.14, 0.14].map(ex => mesh(new THREE.CapsuleGeometry(0.045, 0.06, 4, 10), eyeMat, ex, 0.37, 0.36, headPivot));
+  mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 8), legMat, 0, 0.78, 0, headPivot);
+  const antenna = mesh(new THREE.SphereGeometry(0.06, 14, 12), glow(a.color), 0, 0.9, 0, headPivot);
+  const arms = [-1, 1].map(s => {
+    const pivot = new THREE.Group(); pivot.position.set(0.47 * s, 1.18, 0.05); robot.add(pivot);
+    mesh(new THREE.CapsuleGeometry(0.085, 0.42, 4, 10), shell, 0, -0.26, 0, pivot);
+    return pivot;
+  });
+  build(robot, 'pop', 1.35 + i * 0.1);
+
+  // floor ring
+  const ring = new THREE.Group(); ring.position.set(0, 0.02, -0.45); ring.rotation.x = -Math.PI / 2; g.add(ring);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.8, 64), glow(a.color, 0.07)); ring.add(disc);
+  const outer = new THREE.Mesh(new THREE.RingGeometry(1.66, 1.8, 96), glow(a.color, 0.9)); ring.add(outer);
+  const inner = new THREE.Mesh(new THREE.RingGeometry(1.3, 1.34, 96, 1, 0, Math.PI * 1.4), glow(a.color, 0.45)); ring.add(inner);
+  build(ring, 'ring', 1.2 + i * 0.1);
+
+  // invisible hit box for picking
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.8, 2.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false }));
+  hit.position.set(0, 1.4, -0.45); hit.userData.idx = i; g.add(hit); hitMeshes.push(hit);
+
+  // html label
+  const tag = document.createElement('div');
+  tag.className = 'tag'; tag.style.setProperty('--c', a.color);
+  tag.innerHTML = `<div class="bubble"></div><div class="pill"><span class="dot"></span>${a.name}</div>`;
+  $('labels').appendChild(tag);
+
+  agentGroups.push({ a, i, g, robot, body, headPivot, head, eyes, arms, antenna, ring, outer, inner, disc, tex, screenLight, tag,
+    bubble: tag.querySelector('.bubble'), selA: 0, boost: 0, kick: 0, blinkAt: rand(1, 5), color: col, bubbleTimer: null });
+});
+
+/* --------------------------------------------------------------- hive core */
+const CORE = new THREE.Group(); CORE.position.copy(CORE_POS); world.add(CORE);
+const coreU = {
+  uA: { value: BASE_CORE.clone() }, uTime: { value: 0 }, uStorm: { value: 0 }, uIgnite: { value: 0 },
+};
+const coreMat = new THREE.ShaderMaterial({
+  uniforms: coreU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  vertexShader: `
+    uniform float uTime, uStorm; varying vec3 vN; varying vec3 vP;
+    void main(){
+      vec3 p = position;
+      float d = sin(p.y*6.0+uTime*2.0)*sin(p.x*5.0+uTime*1.3)*0.05*(1.0+uStorm*4.0);
+      p += normal*d;
+      vN = normalize(normalMatrix*normal); vP = p;
+      gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.0);
+    }`,
+  fragmentShader: `
+    uniform vec3 uA; uniform float uTime, uStorm, uIgnite; varying vec3 vN; varying vec3 vP;
+    void main(){
+      float f = pow(1.0 - abs(vN.z), 2.0);
+      float band = 0.5 + 0.5*sin(vP.y*9.0 - uTime*3.0 + sin(vP.x*4.0 + uTime));
+      vec3 col = uA*(0.25 + band*0.45) + uA*f*1.6 + vec3(1.0)*f*uStorm*1.5;
+      gl_FragColor = vec4(col*uIgnite*(1.0+uStorm), (0.35 + f*0.65)*uIgnite);
+    }`,
+});
+const coreBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.75, 24), coreMat); CORE.add(coreBall);
+const coreWire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.0, 2), new THREE.MeshBasicMaterial({ color: '#c9b6ff', wireframe: true, transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false }));
+CORE.add(coreWire);
+// particle cloud
+const cloud = (() => {
+  const N = 2600, pos = new Float32Array(N * 3), cols = new Float32Array(N * 3);
+  const palette = AGENTS.map(a => new THREE.Color(a.color)).concat([new THREE.Color('#ffffff'), new THREE.Color('#ffffff')]);
+  for (let k = 0; k < N; k++) {
+    const r = rand(0.95, 2.5) * (Math.random() < 0.15 ? 1.3 : 1), th = Math.random() * Math.PI * 2, ph = Math.acos(rand(-1, 1));
+    pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph) * 0.8, r * Math.sin(ph) * Math.sin(th)], k * 3);
+    const c = pick(palette); cols.set([c.r, c.g, c.b], k * 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  const p = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.2 * renderer.getPixelRatio(), sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  CORE.add(p); return p;
+})();
+const orbits = [1.3, 1.6, 1.95].map((r, k) => {
+  const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.012, 8, 160), glow(k === 1 ? '#ffffff' : '#a98bff', 0));
+  m.rotation.set(rand(0, Math.PI), rand(0, Math.PI), 0); m.userData.spin = new THREE.Vector3(rand(-.4, .4), rand(.2, .6), rand(-.3, .3));
+  CORE.add(m); return m;
+});
+// pedestal
+const pedestal = new THREE.Group(); pedestal.position.set(CORE_POS.x, 0, CORE_POS.z); world.add(pedestal);
+mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.25, 48), std('#141d45', { metalness: 0.5, roughness: 0.35 }), 0, 0.125, 0, pedestal);
+const padRing = mesh(new THREE.TorusGeometry(1.05, 0.03, 8, 96), glow('#9d7bff', 0.9), 0, 0.26, 0, pedestal); padRing.rotation.x = Math.PI / 2;
+build(pedestal, 'pop', 1.0);
+const coreLight = new THREE.PointLight('#9d7bff', 0, 12, 1.6); coreLight.position.copy(CORE_POS); world.add(coreLight);
+
+// data beams from each desk to the core
+const beams = agentGroups.map(ag => {
+  const from = new THREE.Vector3(ag.g.position.x, 2.4, ag.g.position.z - 0.95);
+  const mid = from.clone().lerp(CORE_POS, 0.5); mid.y += 2.6;
+  const curve = new THREE.QuadraticBezierCurve3(from, mid, CORE_POS.clone());
+  const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(60));
+  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: ag.a.color, dashSize: 0.14, gapSize: 0.14, transparent: true, opacity: 0, toneMapped: false }));
+  line.computeLineDistances(); world.add(line);
+  return { curve, line };
+});
+
+/* --------------------------------------------------------------- effects */
+const bursts = [];
+function burst(target, color, count = 120, speed = 6, life = 2.2, size = 0.25) {
+  const p0 = target.isVector3 ? target : target.getWorldPosition(new THREE.Vector3());
+  const pos = new Float32Array(count * 3), vel = [];
+  for (let k = 0; k < count; k++) {
+    pos.set([p0.x, p0.y, p0.z], k * 3);
+    vel.push(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(speed * rand(0.3, 1)));
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: (3 + size * 8) * renderer.getPixelRatio(), sizeAttenuation: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  scene.add(pts);
+  bursts.push({ pts, vel, life, max: life });
+}
+function ring3d(target, color, size = 6, dur = 1.5, thick = 0.3) {
+  const p0 = target.getWorldPosition(new THREE.Vector3());
+  const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.02 * thick * 3, 8, 128), glow(color, 1));
+  m.position.copy(p0); m.rotation.set(rand(-0.6, 0.6) + Math.PI / 2, rand(-0.6, 0.6), 0);
+  m.scale.setScalar(0.3); scene.add(m);
+  gsap.to(m.scale, { x: size, y: size, z: size, duration: D(dur), ease: 'expo.out' });
+  gsap.to(m.material, { opacity: 0, duration: D(dur), ease: 'power2.in', onComplete: () => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); } });
+}
+function flash(color, amount) {
+  const el = $('flash');
+  el.style.background = `radial-gradient(circle at 70% 45%, ${color}, transparent 70%)`;
+  gsap.fromTo(el, { opacity: Math.min(amount, 1) * 0.55 }, { opacity: 0, duration: D(0.9), ease: 'power2.out' });
+}
+const kick = strength => gsap.fromTo(V, { shake: strength }, { shake: 0, duration: D(0.6), ease: 'power2.out' });
+const boost = (k, amp, dur) => gsap.fromTo(agentGroups[k], { boost: amp }, { boost: 0, duration: D(dur), ease: 'power2.out' });
+
+function stormEvent(i, color, strength = 1) {
+  const c = new THREE.Color(color);
+  coreU.uA.value.copy(c); coreLight.color.copy(c);
+  gsap.fromTo(V, { storm: strength }, { storm: 0, duration: D(2.2), ease: 'power3.out' });
+  gsap.delayedCall(D(1.9), () => { gsap.to(coreU.uA.value, { r: BASE_CORE.r, g: BASE_CORE.g, b: BASE_CORE.b, duration: D(1) }); coreLight.color.copy(BASE_CORE); });
+  flash(color, 0.6 * strength); kick(0.7 * strength);
+  burst(CORE, color, 170, 7.5, 3, 0.2); burst(CORE, '#ffffff', 60, 4, 2, 0.1);
+  ring3d(CORE, color, 8, 1.5, 0.35); gsap.delayedCall(D(0.18), () => ring3d(CORE, '#ffffff', 5, 1.3, 0.25));
+  if (i >= 0) { const ag = agentGroups[i]; ring3d(ag.ring, color, 3.2, 1.2, 0.4); boost(i, 1.2, 1.6); }
+  else for (let k = 0; k < 6; k++) boost(k, 1.2, 1.6);
+}
+
+/* a glowing packet travels along the beam from a desk to the core */
+function sendPulse(i) {
+  const ag = agentGroups[i], { curve, line } = beams[i];
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), glow(ag.a.color, 1)); scene.add(dot);
+  const s = { t: 0 };
+  gsap.to(line.material, { opacity: 0.8, duration: D(0.2), yoyo: true, repeat: 1, repeatDelay: D(0.7) });
+  gsap.to(s, { t: 1, duration: D(1.1), ease: 'power1.inOut',
+    onUpdate: () => dot.position.copy(curve.getPoint(s.t)).add(world.position),
+    onComplete: () => { scene.remove(dot); burst(CORE, ag.a.color, 40, 3, 1.2, 0.1); gsap.fromTo(V, { storm: 0.35 }, { storm: 0, duration: D(0.8) }); } });
+}
+
+/* --------------------------------------------------------------- post */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.45, 0.85);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* --------------------------------------------------------------- layout */
+let VIEW = 15;
+const isPhone = () => innerWidth <= 760;
+function resize() {
+  const aspect = innerWidth / innerHeight;
+  VIEW = Math.max(14.5, 18 / aspect);
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth, innerHeight);
+}
+function updateProjection() {
+  const aspect = innerWidth / innerHeight, halfH = VIEW / 2, halfW = halfH * aspect;
+  const worldPerPx = (2 * halfH) / innerHeight / camera.zoom;
+  // shift the view so the focused robot stays visible beside the chat panel
+  let sx = 0, sy = 0;
+  if (isPhone()) sy = -V.shift * (innerHeight * 0.56) / 2 * worldPerPx;
+  else sx = V.shift * (346 / 2) * worldPerPx;
+  camera.left = -halfW + sx; camera.right = halfW + sx; camera.top = halfH + sy; camera.bottom = -halfH + sy;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+/* --------------------------------------------------------------- UI */
+const teamEl = $('team');
+AGENTS.forEach((a, i) => {
+  const li = document.createElement('li');
+  li.innerHTML = `<button class="member" style="--c:${a.color}" aria-pressed="false" data-i="${i}">
+    <span class="ava"><i></i></span>
+    <span class="who"><b>${a.name}</b><span>${a.role}</span></span>
+    <span class="badge${a.working ? '' : ' idle'}">${a.working ? 'Working' : 'Idle'}</span></button>`;
+  li.firstElementChild.addEventListener('click', () => onSelect(focusIdx === i ? -1 : i));
+  teamEl.appendChild(li);
+});
+function refreshTeam() {
+  teamEl.querySelectorAll('.member').forEach((b, i) => {
+    b.setAttribute('aria-pressed', String(i === focusIdx));
+    const badge = b.querySelector('.badge'); const w = AGENTS[i].working;
+    badge.textContent = w ? 'Working' : 'Idle'; badge.classList.toggle('idle', !w);
+  });
+  $('st-working').textContent = AGENTS.filter(a => a.working).length;
+}
+
+let tasks = 216;
+const logEl = $('log');
+function addLog(i, text) {
+  const li = document.createElement('li'); li.style.setProperty('--c', AGENTS[i].color);
+  li.innerHTML = `<time>${clock()} · ${AGENTS[i].name}</time>`; li.append(text);
+  logEl.prepend(li); while (logEl.children.length > 30) logEl.lastChild.remove();
+}
+const clock = () => new Date().toTimeString().slice(0, 5);
+setInterval(() => { $('st-clock').textContent = clock(); }, 1000); $('st-clock').textContent = clock();
+
+function setTab(name) {
+  ['office', 'hive', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
+  const out = name === 'output';
+  teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'Latest output' : 'Your team';
+  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, 1.9); stormEvent(-1, '#c9a6ff', 1); }
+  if (name === 'office') { onSelect(-1); }
+}
+$('tab-office').onclick = () => setTab('office');
+$('tab-hive').onclick = () => setTab('hive');
+$('tab-output').onclick = () => setTab('output');
+$('replay').onclick = () => { onSelect(-1); runBuild(); };
+
+/* chat */
+const msgs = $('msgs');
+function say(text, me = false) {
+  const d = document.createElement('div'); d.className = 'msg' + (me ? ' me' : ''); d.textContent = text;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+}
+function openChat(i) {
+  const a = AGENTS[i];
+  const chat = $('chat'); chat.style.setProperty('--c', a.color);
+  $('chat-ava').style.setProperty('--c', a.color);
+  $('chat-name').textContent = a.name;
+  $('chat-role').textContent = `${a.role} · ${a.working ? 'online' : 'idle'}`;
+  msgs.replaceChildren(); say(a.intro);
+  const chips = $('chips'); chips.replaceChildren(); chips.style.setProperty('--c', a.color);
+  Object.keys(a.chips).forEach(q => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
+  chat.classList.add('open');
+}
+function closeChat() { $('chat').classList.remove('open'); }
+$('chat-close').onclick = () => onSelect(-1);
+$('send').addEventListener('submit', e => { e.preventDefault(); const v = $('msg-input').value.trim(); if (v) { ask(v); $('msg-input').value = ''; } });
+
+function ask(q) {
+  if (focusIdx < 0) return;
+  const i = focusIdx, a = AGENTS[i];
+  say(q, true);
+  const t = say(''); t.classList.add('typing'); t.innerHTML = '<span></span><span></span><span></span>';
+  gsap.delayedCall(D(0.9), () => {
+    t.classList.remove('typing');
+    const reply = a.chips[q] || `Got it. I will work on "${q}" and post the result in Output when it is done.`;
+    t.textContent = reply; msgs.scrollTop = msgs.scrollHeight;
+    if (!a.working) { a.working = true; refreshTeam(); $('chat-role').textContent = `${a.role} · online`; }
+    agentGroups[i].kick = 1; showBubble(i, pick(a.tasks)); sendPulse(i);
+    gsap.delayedCall(D(1.1), () => stormEvent(i, a.color, 0.7));
+    tasks++; $('st-tasks').textContent = tasks; addLog(i, reply.split('. ')[0] + '.');
+  });
+}
+
+/* --------------------------------------------------------------- selection */
+let focusIdx = -1;
+function focusOn(p, zoom) {
+  const off = camera.position.clone().sub(controls.target);
+  gsap.to(controls.target, { x: p.x, y: p.y, z: p.z, duration: D(1.1), ease: 'power3.inOut', onUpdate: () => camera.position.copy(controls.target).add(off) });
+  gsap.to(camera, { zoom, duration: D(1.1), ease: 'power3.inOut' });
+}
+function onSelect(i) {
+  agentGroups.forEach((o, j) => gsap.to(o, { selA: j === i ? 1 : 0, duration: D(0.5) }));
+  focusIdx = i;
+  if (i >= 0) {
+    const p = agentGroups[i].g.position;
+    focusOn(new THREE.Vector3(p.x, 1.2, p.z - 0.5), isPhone() ? 1.9 : 1.6);
+    gsap.to(V, { focus: 1, shift: 1, duration: D(1.1), ease: 'power3.inOut' });
+    openChat(i); ring3d(agentGroups[i].ring, AGENTS[i].color, 2.6, 1, 0.4); boost(i, 1, 1.2);
+  } else {
+    focusOn(new THREE.Vector3(0, 0.5, 0), 1);
+    gsap.to(V, { focus: 0, shift: 0, duration: D(0.9), ease: 'power3.inOut' });
+    closeChat();
+  }
+  refreshTeam();
+}
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  if (ray.intersectObject(coreBall).length) { setTab('hive'); return; }
+  const hit = ray.intersectObjects(hitMeshes)[0];
+  onSelect(hit ? (hit.object.userData.idx === focusIdx ? -1 : hit.object.userData.idx) : -1);
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  renderer.domElement.style.cursor = ray.intersectObjects(hitMeshes).length || ray.intersectObject(coreBall).length ? 'pointer' : 'grab';
+});
+
+/* --------------------------------------------------------------- task loop */
+function showBubble(i, text) {
+  const ag = agentGroups[i]; ag.bubble.textContent = text; ag.bubble.classList.add('on');
+  clearTimeout(ag.bubbleTimer); ag.bubbleTimer = setTimeout(() => ag.bubble.classList.remove('on'), 3200);
+}
+let built = false;
+function taskTick() {
+  if (built) {
+    const working = agentGroups.filter(o => o.a.working);
+    if (working.length) {
+      const o = pick(working), t = pick(o.a.tasks);
+      showBubble(o.i, t); sendPulse(o.i);
+      tasks++; $('st-tasks').textContent = tasks; addLog(o.i, t);
+    }
+  }
+  setTimeout(taskTick, rand(2200, 4200));
+}
+
+/* --------------------------------------------------------------- build sequence */
+let buildTl;
+function runBuild() {
+  built = false;
+  if (buildTl) buildTl.kill();
+  const tl = buildTl = gsap.timeline({ onComplete: () => { built = true; } });
+  BUILD.forEach(({ obj, kind, delay }) => {
+    const h = obj.userData.home, s = obj.userData.scaleHome;
+    if (kind === 'floor') tl.fromTo(obj.scale, { x: 0.001, z: 0.001 }, { x: s.x, z: s.z, duration: D(0.9), ease: 'expo.out' }, 0);
+    else if (kind === 'wall') tl.fromTo(obj.scale, { y: 0.001 }, { y: s.y, duration: D(0.8), ease: 'expo.out' }, 0.35);
+    else if (kind === 'drop') tl.fromTo(obj.position, { y: h.y + 7 }, { y: h.y, duration: D(0.8), ease: 'bounce.out' }, delay);
+    else if (kind === 'pop') tl.fromTo(obj.scale, { x: 0.001, y: 0.001, z: 0.001 }, { x: s.x, y: s.y, z: s.z, duration: D(0.6), ease: 'back.out(2.2)' }, delay);
+    else if (kind === 'ring') tl.fromTo(obj.scale, { x: 0.001, y: 0.001 }, { x: 1, y: 1, duration: D(0.9), ease: 'expo.out' }, delay);
+  });
+  // the core ignites
+  tl.fromTo(coreU.uIgnite, { value: 0 }, { value: 1, duration: D(0.8), ease: 'power2.in' }, 2.0);
+  tl.fromTo(cloud.material, { opacity: 0 }, { opacity: 0.9, duration: D(1.2) }, 2.4);
+  tl.fromTo(coreWire.material, { opacity: 0 }, { opacity: 0.18, duration: D(1) }, 2.4);
+  orbits.forEach((o, k) => tl.fromTo(o.material, { opacity: 0 }, { opacity: 0.6, duration: D(0.8) }, 2.5 + k * 0.1));
+  tl.fromTo(coreLight, { intensity: 0 }, { intensity: 14, duration: D(1) }, 2.4);
+  beams.forEach((b, k) => tl.fromTo(b.line.material, { opacity: 0 }, { opacity: 0.22, duration: D(0.6) }, 2.7 + k * 0.06));
+  tl.call(() => stormEvent(-1, '#c9a6ff', 1.3), null, 2.8);
+}
+
+/* --------------------------------------------------------------- frame loop */
+const clockT = new THREE.Clock();
+const tmp = new THREE.Vector3();
+function frame() {
+  const dt = Math.min(clockT.getDelta(), 0.05), t = clockT.elapsedTime;
+  coreU.uTime.value = t; coreU.uStorm.value = V.storm;
+
+  // agents
+  for (const o of agentGroups) {
+    const w = o.a.working, k = o.i;
+    if (w) {
+      o.arms[0].rotation.x = -1.15 + Math.sin(t * 16 + k) * 0.13;
+      o.arms[1].rotation.x = -1.15 + Math.sin(t * 16 + k + 2.4) * 0.13;
+      o.headPivot.rotation.y = Math.sin(t * 0.6 + k) * 0.18;
+      o.headPivot.rotation.x = 0.12 + Math.sin(t * 1.3 + k) * 0.04;
+      o.tex.offset.y -= dt * 0.18;
+    } else {
+      o.arms[0].rotation.x += (-0.15 - o.arms[0].rotation.x) * 0.1;
+      o.arms[1].rotation.x += (-0.15 - o.arms[1].rotation.x) * 0.1;
+      o.headPivot.rotation.y = Math.sin(t * 0.4) * 0.6;
+      o.headPivot.rotation.x = -0.1;
+    }
+    // little hop when the agent receives a message
+    if (o.kick > 0) { o.kick = Math.max(0, o.kick - dt * 1.6); }
+    o.robot.position.y = Math.sin(t * 2 + k) * 0.02 + Math.sin(o.kick * Math.PI) * 0.35;
+    // blink
+    const blink = (t > o.blinkAt && t < o.blinkAt + 0.12) ? 0.15 : 1;
+    if (t > o.blinkAt + 0.12) o.blinkAt = t + rand(2, 6);
+    o.eyes.forEach(e => e.scale.y = blink);
+    o.antenna.material.opacity = 0.6 + 0.4 * Math.sin(t * 3 + k);
+    // rings
+    const lvl = (w ? 0.6 : 0.3) + 0.15 * Math.sin(t * 2 + k) + o.selA * 0.5 + o.boost;
+    o.outer.material.opacity = Math.min(lvl, 1.6);
+    o.disc.material.opacity = 0.05 + o.selA * 0.08 + o.boost * 0.15;
+    o.inner.rotation.z += dt * (0.4 + o.boost * 3);
+    o.ring.scale.x = o.ring.scale.y = o.ring.scale.x > 0.999 && built ? 1 + o.boost * 0.08 + o.selA * 0.04 : o.ring.scale.x;
+    o.screenLight.intensity = w ? 1.2 + Math.sin(t * 9 + k) * 0.2 : 0.4;
+    // label position
+    tmp.set(0, 2.85, -0.95); o.g.localToWorld(tmp); tmp.project(camera);
+    const sx = (tmp.x * 0.5 + 0.5) * innerWidth, sy = (-tmp.y * 0.5 + 0.5) * innerHeight;
+    o.tag.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
+    o.tag.style.opacity = built ? (focusIdx < 0 || focusIdx === k ? 1 : 0.35) : 0;
+  }
+
+  // core
+  coreBall.scale.setScalar(1 + V.storm * 0.25 + Math.sin(t * 2) * 0.02);
+  coreWire.rotation.y += dt * 0.2; coreWire.rotation.x += dt * 0.07;
+  cloud.rotation.y += dt * (0.12 + V.storm * 1.2);
+  cloud.scale.setScalar(1 + V.storm * 0.5);
+  orbits.forEach(o => { o.rotation.x += o.userData.spin.x * dt * (1 + V.storm * 4); o.rotation.y += o.userData.spin.y * dt * (1 + V.storm * 4); });
+  CORE.position.y = CORE_POS.y + Math.sin(t * 1.1) * 0.12;
+  padRing.material.opacity = 0.6 + 0.3 * Math.sin(t * 2) + V.storm;
+  if (built) coreLight.intensity = 10 + V.storm * 30 + Math.sin(t * 3) * 1.5;
+  bloom.strength = 0.55 + V.storm * 0.7;
+
+  // floor tiles flicker
+  for (const tl of tiles) tl.material.opacity = Math.max(0, Math.sin(t * 0.8 + tl.userData.phase)) * 0.12 + V.storm * 0.1;
+
+  // bursts
+  for (let b = bursts.length - 1; b >= 0; b--) {
+    const B = bursts[b]; B.life -= dt;
+    const arr = B.pts.geometry.attributes.position.array;
+    for (let k = 0; k < B.vel.length; k++) {
+      const v = B.vel[k]; arr[k * 3] += v.x * dt; arr[k * 3 + 1] += v.y * dt; arr[k * 3 + 2] += v.z * dt; v.multiplyScalar(0.95); v.y -= dt * 0.6;
+    }
+    B.pts.geometry.attributes.position.needsUpdate = true;
+    B.pts.material.opacity = Math.max(0, B.life / B.max);
+    if (B.life <= 0) { scene.remove(B.pts); B.pts.geometry.dispose(); B.pts.material.dispose(); bursts.splice(b, 1); }
+  }
+
+  // camera shake on the world group
+  world.position.set((Math.random() - 0.5) * V.shake * 0.25, (Math.random() - 0.5) * V.shake * 0.25, 0);
+
+  controls.update();
+  updateProjection();
+  composer.render();
+  requestAnimationFrame(frame);
+}
+
+refreshTeam();
+runBuild();
+setTimeout(taskTick, 3500);
+frame();
+</script>
