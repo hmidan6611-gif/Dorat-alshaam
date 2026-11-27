@@ -1,0 +1,810 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>ROOH</title>
+<style>
+@font-face{font-family:Anton;src:url(node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2) format('woff2');}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#fff}
+#type{position:absolute;inset:0;z-index:0;overflow:hidden;background:#fff}
+.pbg{position:absolute;top:0;height:100%;background:#f1efee;display:none}
+.word{position:absolute;left:0;top:0;font-family:Anton;color:#780F28;white-space:nowrap;line-height:1;transform-origin:50% 50%;opacity:0}
+canvas{position:absolute;left:0;top:0;z-index:1}
+#fx{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.wipe{position:absolute;top:-20%;height:140%;width:70%;background:#780F28;transform:skewX(-18deg);display:none}
+.div{position:absolute;top:0;width:6px;height:100%;background:#780F28;display:none}
+.lab{position:absolute;bottom:36px;font-family:Anton;font-size:30px;letter-spacing:4px;color:#780F28;display:none}
+.ring{position:absolute;border:5px solid #fff;border-radius:50%;display:none;box-shadow:0 0 18px rgba(255,255,255,.8)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0}
+</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<div id="type">
+  <div class="pbg" id="pbg1"></div>
+  <div class="word" id="wROOH">ROOH</div>
+  <div class="word" id="wOVER">OVERSIZED</div>
+  <div class="word" id="wSTREET">STREET</div>
+  <div class="word" id="wICONIC">ICONIC</div>
+  <div class="word" id="wOUT">ROOH</div>
+  <div class="word" id="wHERO">ROOH</div>
+</div>
+<div id="fx">
+  <div class="ring" id="ring1"></div><div class="ring" id="ring2"></div>
+  <div class="div" id="d1"></div><div class="div" id="d2"></div>
+  <div class="lab" id="l1">01 — FRONT</div><div class="lab" id="l2">02 — SIDE</div><div class="lab" id="l3">03 — BACK</div>
+  <div class="wipe" id="wipe"></div>
+  <div id="flash"></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const W = 1920, H = 1080;
+const BURG = '#780F28';
+const MZ = -2.6;
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// ---------- math helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, u) => a + (b - a) * u;
+const sstep = (a, b, x) => { const u = clamp((x - a) / (b - a)); return u * u * (3 - 2 * u); };
+const eIO3 = u => (u = clamp(u), u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+const eIO5 = u => (u = clamp(u), u < .5 ? 16 * u ** 5 : 1 - Math.pow(-2 * u + 2, 5) / 2);
+const eO3 = u => 1 - Math.pow(1 - clamp(u), 3);
+const eO5 = u => 1 - Math.pow(1 - clamp(u), 5);
+const eI2 = u => clamp(u) ** 2;
+const eOBack = u => { u = clamp(u); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * (u - 1) ** 3 + c1 * (u - 1) ** 2; };
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.setClearColor(0xffffff, 0);
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 0.92;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.85;
+
+const key = new THREE.DirectionalLight(0xffffff, 2.6);
+key.position.set(2.5, 5.5, 4.0);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -3; key.shadow.camera.right = 3;
+key.shadow.camera.top = 3; key.shadow.camera.bottom = -4;
+key.shadow.camera.near = 0.5; key.shadow.camera.far = 20;
+key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02;
+key.shadow.radius = 6;
+key.target.position.set(0, 0.8, -1.3);
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xfff4f0, 2.2); rim.position.set(-3.5, 4, -6); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xffffff, 1.4); rim2.position.set(4, 2.5, -5); scene.add(rim2);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.6));
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.16 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+// ---------- procedural textures ----------
+function normalTex(size, hf, strength) {
+  const h = new Float32Array(size * size);
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) h[j * size + i] = hf(i / size, j / size, i, j);
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d'); const img = ctx.createImageData(size, size);
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+    const l = h[j * size + (i - 1 + size) % size], r = h[j * size + (i + 1) % size];
+    const d = h[((j - 1 + size) % size) * size + i], u = h[((j + 1) % size) * size + i];
+    let nx = (l - r) * strength, ny = (d - u) * strength, nz = 1;
+    const len = Math.hypot(nx, ny, nz); nx /= len; ny /= len; nz /= len;
+    const k = (j * size + i) * 4;
+    img.data[k] = (nx * .5 + .5) * 255; img.data[k + 1] = (ny * .5 + .5) * 255; img.data[k + 2] = (nz * .5 + .5) * 255; img.data[k + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace;
+  t.anisotropy = 8; return t;
+}
+// value noise
+const NS = 256; const nperm = new Float32Array(NS * NS); for (let i = 0; i < NS * NS; i++) nperm[i] = Math.random();
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const g = (a, b) => nperm[((b % NS + NS) % NS) * NS + ((a % NS + NS) % NS)];
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return lerp(lerp(g(xi, yi), g(xi + 1, yi), u), lerp(g(xi, yi + 1), g(xi + 1, yi + 1), u), v);
+}
+// jersey knit: columns of V loops + fibre fuzz. 1 tile = 32 columns
+const knitTex = normalTex(1024, (u, v, i, j) => {
+  const C = 32, R = 44; const cu = (u * C) % 1, cv = (v * R) % 1;
+  const side = cu < .5 ? 1 : -1; const lu = (cu % .5) * 2;
+  const leg = Math.pow(Math.sin(Math.PI * lu), .8);
+  const slope = Math.sin(Math.PI * 2 * (cv + side * lu * .35));
+  const fuzz = vnoise(i * .7, j * .7) * .35 + vnoise(i * .13, j * .13) * .25;
+  return leg * (.7 + .3 * slope) + fuzz;
+}, 3.2);
+const ribTex = normalTex(512, (u, v, i, j) => {
+  const C = 26; const cu = (u * C) % 1;
+  return Math.pow(Math.sin(Math.PI * cu), .6) + vnoise(i * .9, j * .9) * .25 + .15 * Math.sin(v * 2 * Math.PI * 60);
+}, 4.0);
+const leatherTex = normalTex(512, (u, v, i, j) => vnoise(i * .35, j * .35) * .6 + vnoise(i * .08, j * .08) * .8, 2.0);
+// stitch dash alpha
+const dashTex = (() => {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 8; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, 64, 8); x.fillStyle = '#fff'; x.fillRect(6, 0, 44, 8);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+// soft contact blob
+const blobTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(.5, 'rgba(0,0,0,0.18)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
+})();
+
+// ---------- materials ----------
+function fabric(color, repU, repV, rib = false) {
+  const n = (rib ? ribTex : knitTex).clone(); n.repeat.set(repU, repV); n.needsUpdate = true;
+  const c = new THREE.Color(color); if (color === BURG) c.multiplyScalar(0.58);
+  return new THREE.MeshPhysicalMaterial({
+    color: c, roughness: 0.88, metalness: 0, normalMap: n, normalScale: new THREE.Vector2(0.55, 0.55),
+    sheen: 0.6, sheenRoughness: 0.6, sheenColor: c.clone().multiplyScalar(1.6),
+    side: THREE.DoubleSide, envMapIntensity: 0.3,
+  });
+}
+const glossBlack = new THREE.MeshPhysicalMaterial({ color: 0x040404, roughness: 0.1, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.5 });
+const gloveMat = new THREE.MeshPhysicalMaterial({ color: 0x0c0c0c, roughness: 0.38, clearcoat: 0.55, clearcoatRoughness: 0.3, normalMap: leatherTex, normalScale: new THREE.Vector2(0.4, 0.4), envMapIntensity: 1.1 });
+const sleeveMat = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0a, roughness: 0.55, sheen: .5, sheenColor: new THREE.Color('#333'), envMapIntensity: .7 });
+const shoeMat = new THREE.MeshPhysicalMaterial({ color: 0xf6f6f4, roughness: 0.42, clearcoat: .25, envMapIntensity: .9 });
+const soleMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.65, envMapIntensity: .8 });
+const laceMat = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: .8 });
+const metalMat = new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: .25, metalness: 1 });
+
+function mesh(geo, mat, parent, pos, rot) {
+  const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true;
+  if (pos) m.position.copy(pos); if (rot) m.rotation.set(...rot);
+  if (parent) parent.add(m); return m;
+}
+
+// ---------- geometry helpers ----------
+const BODY = [[0.258, -0.172], [0.268, -0.10], [0.274, 0.04], [0.276, 0.22], [0.272, 0.34], [0.262, 0.42], [0.232, 0.485], [0.18, 0.528], [0.125, 0.556], [0.088, 0.57]];
+const HEM = [[0.247, -0.248], [0.25, -0.24], [0.252, -0.20], [0.258, -0.172]];
+const ZS = 0.62;
+function radAt(prof, y) {
+  for (let i = 0; i < prof.length - 1; i++) { const [r0, y0] = prof[i], [r1, y1] = prof[i + 1]; if (y >= y0 && y <= y1) return lerp(r0, r1, (y - y0) / (y1 - y0)); }
+  return y < prof[0][1] ? prof[0][0] : prof[prof.length - 1][0];
+}
+function smoothProfile(prof, n) { // catmull-rom resample
+  const pts = prof.map(p => new THREE.Vector2(p[0], p[1]));
+  const curve = new THREE.SplineCurve(pts); return curve.getPoints(n);
+}
+const surfZ = (x, y, off = 0) => { const r = radAt(BODY, y) + off; return ZS * Math.sqrt(Math.max(r * r - x * x, 0)); };
+
+function oval(profPts, seg, phi0, phiL, zs, disp) {
+  const g = new THREE.LatheGeometry(profPts, seg, phi0, phiL);
+  g.scale(1, 1, zs);
+  if (disp) {
+    g.computeVertexNormals();
+    const p = g.attributes.position, n = g.attributes.normal;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i); const d = disp(x, y, z);
+      p.setXYZ(i, x + n.getX(i) * d, y + n.getY(i) * d, z + n.getZ(i) * d);
+    }
+  }
+  g.computeVertexNormals(); return g;
+}
+const foldBody = (x, y, z) => {
+  const a = Math.atan2(x, z / ZS);
+  let d = 0.0035 * Math.sin(21 * y + 3.5 * Math.sin(7 * x)) + 0.0025 * Math.sin(13 * x - 16 * y + 1.3);
+  d += 0.007 * Math.sin(11 * a + 2 * Math.sin(5 * y)) * sstep(0.12, -0.17, y);
+  d += 0.004 * Math.sin(17 * a) * sstep(0.30, 0.46, y) * (1 - sstep(0.46, 0.56, y));
+  return d;
+};
+const foldSleeve = (k) => (x, y, z) => {
+  const a = Math.atan2(x, z);
+  return 0.0045 * Math.sin(48 * y + 2.5 * Math.sin(3 * a)) * (0.5 + k * sstep(-0.05, -0.24, y)) + 0.002 * Math.sin(7 * a + 9 * y);
+};
+function stitchLine(points, mat, closed = false) {
+  const curve = new THREE.CatmullRomCurve3(points, closed);
+  const L = curve.getLength();
+  const g = new THREE.TubeGeometry(curve, Math.max(8, Math.round(L / 0.003)), 0.0008, 5, closed);
+  const m = mat.clone(); m.alphaMap = dashTex.clone(); m.alphaMap.repeat.set(L / 0.0048, 1); m.alphaMap.needsUpdate = true;
+  const me = new THREE.Mesh(g, m); me.castShadow = false; return me;
+}
+
+// ---------- embroidery logo ----------
+let logoMat;
+function buildLogoMaterial() {
+  const Wc = 1024, Hc = 400;
+  const c = document.createElement('canvas'); c.width = Wc; c.height = Hc; const x = c.getContext('2d');
+  x.font = '330px Anton'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  // base fill
+  x.fillStyle = '#f4f2ef'; x.fillText('ROOH', Wc / 2, Hc / 2 + 8);
+  // satin threads
+  x.globalCompositeOperation = 'source-atop';
+  for (let i = -Hc; i < Wc + Hc; i += 3) {
+    const s = 205 + Math.floor(Math.random() * 50);
+    x.strokeStyle = `rgb(${s},${s - 2},${s - 5})`; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(i, 0); x.lineTo(i + Hc * 0.35, Hc); x.stroke();
+  }
+  x.globalCompositeOperation = 'source-over';
+  x.lineWidth = 5; x.strokeStyle = 'rgba(170,165,160,0.9)'; x.strokeText('ROOH', Wc / 2, Hc / 2 + 8);
+  const map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8;
+  // height for normal: blur of text + thread ridges
+  const hc = document.createElement('canvas'); hc.width = Wc; hc.height = Hc; const hx = hc.getContext('2d');
+  hx.fillStyle = '#000'; hx.fillRect(0, 0, Wc, Hc); hx.filter = 'blur(5px)';
+  hx.font = '330px Anton'; hx.textAlign = 'center'; hx.textBaseline = 'middle'; hx.fillStyle = '#fff'; hx.fillText('ROOH', Wc / 2, Hc / 2 + 8);
+  hx.filter = 'none';
+  const hd = hx.getImageData(0, 0, Wc, Hc).data;
+  const hh = new Float32Array(Wc * Hc);
+  for (let j = 0; j < Hc; j++) for (let i = 0; i < Wc; i++) {
+    const base = hd[(j * Wc + i) * 4] / 255;
+    const ridge = 0.5 + 0.5 * Math.sin((i - j * 0.35) * (2 * Math.PI / 3));
+    hh[j * Wc + i] = base * (0.8 + 0.2 * ridge);
+  }
+  const nc = document.createElement('canvas'); nc.width = Wc; nc.height = Hc; const nx = nc.getContext('2d'); const img = nx.createImageData(Wc, Hc);
+  for (let j = 0; j < Hc; j++) for (let i = 0; i < Wc; i++) {
+    const g = (a, b) => hh[clamp(b, 0, Hc - 1) * Wc + clamp(a, 0, Wc - 1)];
+    let ax = (g(i - 1, j) - g(i + 1, j)) * 6, ay = (g(i, j + 1) - g(i, j - 1)) * 6, az = 1; const L = Math.hypot(ax, ay, az);
+    const k = (j * Wc + i) * 4; img.data[k] = (ax / L * .5 + .5) * 255; img.data[k + 1] = (ay / L * .5 + .5) * 255; img.data[k + 2] = (az / L * .5 + .5) * 255; img.data[k + 3] = 255;
+  }
+  nx.putImageData(img, 0, 0);
+  const nmap = new THREE.CanvasTexture(nc); nmap.colorSpace = THREE.NoColorSpace;
+  logoMat = new THREE.MeshPhysicalMaterial({ map, normalMap: nmap, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.55, sheen: 0.6, sheenColor: new THREE.Color('#ffffff'), transparent: true, alphaTest: 0.35, envMapIntensity: .8 });
+}
+
+// ---------- skeleton ----------
+const L1 = 0.30, L2 = 0.29;
+function skeleton() {
+  const s = {};
+  s.root = new THREE.Group();
+  s.hips = new THREE.Group(); s.hips.position.y = 0.98; s.root.add(s.hips);
+  s.spine = new THREE.Group(); s.hips.add(s.spine);
+  s.chest = new THREE.Group(); s.chest.position.y = 0.30; s.spine.add(s.chest);
+  s.head = new THREE.Group(); s.head.position.y = 0.255; s.chest.add(s.head);
+  for (const [k, sx] of [['L', 1], ['R', -1]]) {
+    const sh = new THREE.Group(); sh.position.set(0.205 * sx, 0.205, -0.005); s.chest.add(sh);
+    const el = new THREE.Group(); el.position.y = -L1; sh.add(el);
+    const hd = new THREE.Group(); hd.position.y = -L2; el.add(hd);
+    s['sh' + k] = sh; s['el' + k] = el; s['hand' + k] = hd;
+    const th = new THREE.Group(); th.position.set(0.095 * sx, -0.03, 0); s.spine.add(th);
+    const kn = new THREE.Group(); kn.position.y = -0.44; th.add(kn);
+    const ft = new THREE.Group(); ft.position.y = -0.42; kn.add(ft);
+    s['th' + k] = th; s['kn' + k] = kn; s['ft' + k] = ft;
+  }
+  return s;
+}
+
+// ---------- hoodie ----------
+function buildHoodie(sk, color, withLogo) {
+  const light = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), 0.07);
+  const stitchMat = new THREE.MeshStandardMaterial({ color: light, roughness: .8, alphaTest: .5, transparent: false });
+  const pieces = {};
+  const P = smoothProfile(BODY, 40);
+  const HP = HEM.map(p => new THREE.Vector2(p[0], p[1]));
+  const mk = (name, parent) => { const g = new THREE.Group(); g.name = name; parent.add(g); pieces[name] = g; return g; };
+  const anchors = {};
+  // front & back panels
+  for (const [name, phi0] of [['front', -Math.PI / 2], ['back', Math.PI / 2]]) {
+    const g = mk(name, sk.spine);
+    mesh(oval(P, 40, phi0, Math.PI, ZS, foldBody), fabric(color, 18, 20), g);
+    mesh(oval(HP, 40, phi0, Math.PI, ZS, (x, y, z) => 0.0015 * Math.sin(60 * Math.atan2(x, z))), fabric(color, 40, 2, true), g);
+    // hem seam (double needle)
+    for (const dy of [0, -0.006]) {
+      const pts = []; for (let i = 0; i <= 48; i++) { const a = phi0 + Math.PI * i / 48; const y = -0.168 + dy; const r = radAt(BODY, -0.17) + 0.0035; pts.push(V3(r * Math.sin(a), y, ZS * r * Math.cos(a))); }
+      g.add(stitchLine(pts, stitchMat));
+    }
+  }
+  const fr = pieces.front;
+  // kangaroo pocket
+  {
+    const pts = []; for (let y = -0.15; y <= 0.031; y += 0.015) pts.push(new THREE.Vector2(radAt(BODY, y) + 0.0065, y));
+    const pg = oval(pts, 20, -0.6, 1.2, ZS, (x, y, z) => 0.0025 * Math.sin(30 * x + 12 * y) + 0.002);
+    mesh(pg, fabric(color, 7, 4), fr);
+    const onS = (a, y, o = 0.0085) => { const r = radAt(BODY, y) + o; return V3(r * Math.sin(a), y, ZS * r * Math.cos(a)); };
+    for (const o of [0, 0.006]) {
+      const top = []; for (let i = 0; i <= 24; i++) top.push(onS(lerp(-0.6 + 0.01, 0.6 - 0.01, i / 24), 0.026 - o));
+      fr.add(stitchLine(top, stitchMat));
+      const bot = []; for (let i = 0; i <= 24; i++) bot.push(onS(lerp(-0.6 + 0.01, 0.6 - 0.01, i / 24), -0.146 + o));
+      fr.add(stitchLine(bot, stitchMat));
+    }
+    // pocket opening shadows
+    for (const sx of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.165), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 }));
+      const a = 0.6 * sx; const r = radAt(BODY, -0.06) + 0.004; m.position.set(r * Math.sin(a), -0.06, ZS * r * Math.cos(a));
+      m.rotation.y = Math.atan2(Math.sin(a), Math.cos(a) / ZS * ZS); fr.add(m);
+    }
+    const pa = new THREE.Object3D(); const ax = -0.07, ay = 0.026; pa.position.set(ax, ay, surfZ(ax, ay, 0.0085)); pa.rotation.y = Math.atan2(ax, surfZ(ax, ay) / (ZS * ZS)); fr.add(pa); anchors.pocket = pa;
+    const ca = new THREE.Object3D(); ca.position.set(-0.11, 0.22, surfZ(-0.11, 0.22)); ca.rotation.y = Math.atan2(-0.11, surfZ(-0.11, 0.22) / (ZS * ZS)); fr.add(ca); anchors.chest = ca;
+  }
+  // logo
+  if (withLogo) {
+    const lx = 0.098, ly = 0.335; const z = surfZ(lx, ly, 0.0016);
+    const m = mesh(new THREE.PlaneGeometry(0.078, 0.0305), logoMat, fr);
+    m.position.set(lx, ly, z); m.rotation.y = Math.atan2(lx, z / (ZS * ZS));
+    m.castShadow = false;
+    const a = new THREE.Object3D(); a.position.copy(m.position); a.rotation.copy(m.rotation); fr.add(a); anchors.logo = a;
+  }
+  // drawstrings
+  for (const sx of [-1, 1]) {
+    const x = 0.036 * sx; const pts = [];
+    for (let i = 0; i <= 10; i++) { const y = lerp(0.548, 0.33 + (sx > 0 ? 0.0 : 0.02), i / 10); pts.push(V3(x + 0.006 * Math.sin(i), y, Math.max(surfZ(x, y), 0.085) + 0.011)); }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    mesh(new THREE.TubeGeometry(curve, 40, 0.0055, 8), fabric(color, 1, 30, true), fr);
+    const end = pts[pts.length - 1];
+    const ag = mesh(new THREE.CylinderGeometry(0.0062, 0.0062, 0.026, 16), metalMat, fr); ag.position.set(end.x, end.y - 0.012, end.z);
+    if (sx < 0) { const a = new THREE.Object3D(); a.position.set(x, 0.47, surfZ(x, 0.47) + 0.011); fr.add(a); anchors.string = a; }
+  }
+  // hood
+  {
+    const g = mk('hood', sk.spine);
+    const dome = new THREE.SphereGeometry(0.17, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2);
+    dome.scale(0.92, 0.62, 0.82); dome.rotateX(-Math.PI / 2 - 0.62);
+    const p = dome.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); const d = 0.004 * Math.sin(30 * x + 20 * y); p.setXYZ(i, x * (1 + d), y, z * (1 + d)); }
+    dome.computeVertexNormals();
+    mesh(dome, fabric(color, 8, 6), g, V3(0, 0.505, -0.085));
+    const rimG = new THREE.TorusGeometry(0.112, 0.03, 16, 64); rimG.rotateX(-Math.PI / 2); rimG.scale(1, 1, 0.92); rimG.rotateX(0.32);
+    const p2 = rimG.attributes.position; for (let i = 0; i < p2.count; i++) { const x = p2.getX(i), z = p2.getZ(i); p2.setY(i, p2.getY(i) + 0.004 * Math.sin(16 * Math.atan2(x, z))); }
+    rimG.computeVertexNormals();
+    mesh(rimG, fabric(color, 22, 3), g, V3(0, 0.565, -0.012));
+    const a = new THREE.Object3D(); a.position.set(-0.09, 0.57, 0.05); a.rotation.y = -0.6; g.add(a); anchors.hood = a;
+  }
+  // sleeves
+  for (const k of ['L', 'R']) {
+    const up = mk('up' + k, sk['sh' + k]);
+    const UP = smoothProfile([[0.06, 0.035], [0.086, 0.015], [0.092, -0.03], [0.088, -0.16], [0.080, -0.31]], 24);
+    mesh(oval(UP, 32, 0, Math.PI * 2, 1, foldSleeve(0.4)), fabric(color, 12, 8), up);
+    const cap = new THREE.SphereGeometry(0.087, 32, 16); cap.scale(0.95, 0.62, 1);
+    mesh(cap, fabric(color, 10, 6), up, V3(0, -0.015, 0));
+    const lo = mk('lo' + k, sk['el' + k]);
+    const LO = smoothProfile([[0.080, 0.0], [0.077, -0.09], [0.072, -0.17], [0.066, -0.225], [0.056, -0.245]], 24);
+    mesh(oval(LO, 32, 0, Math.PI * 2, 1, foldSleeve(1.6)), fabric(color, 11, 7), lo);
+    mesh(new THREE.SphereGeometry(0.079, 32, 16), fabric(color, 10, 6), lo);
+    const CF = [[0.0505, -0.245], [0.049, -0.27], [0.047, -0.305], [0.044, -0.31]].map(p => new THREE.Vector2(p[0], p[1]));
+    mesh(oval(CF, 32, 0, Math.PI * 2, 1, (x, y, z) => 0.0012 * Math.sin(40 * Math.atan2(x, z))), fabric(color, 26, 2, true), lo);
+    for (const dy of [0, -0.006]) {
+      const pts = []; for (let i = 0; i <= 40; i++) { const a = Math.PI * 2 * i / 40; const r = 0.0575; pts.push(V3(r * Math.sin(a), -0.24 + dy, r * Math.cos(a))); }
+      lo.add(stitchLine(pts, stitchMat, true));
+    }
+    if (k === 'R') { const a = new THREE.Object3D(); a.position.set(-0.07, -0.12, 0.03); a.rotation.y = -1.2; lo.add(a); anchors.cuff = a; }
+  }
+  return { pieces, anchors, order: ['hood', 'upL', 'upR', 'back', 'front', 'loL', 'loR'] };
+}
+
+// ---------- mannequin body ----------
+function buildMannequin(sk) {
+  // head & neck
+  const head = new THREE.SphereGeometry(0.1, 48, 32); head.scale(1.0, 1.3, 1.12);
+  const hp = head.attributes.position; for (let i = 0; i < hp.count; i++) { const y = hp.getY(i), z = hp.getZ(i); if (z > 0 && y < 0) hp.setZ(i, z * (1 - 0.18 * (-y / 0.13))); }
+  head.computeVertexNormals();
+  mesh(head, glossBlack, sk.head, V3(0, 0.14, 0.005));
+  mesh(new THREE.CylinderGeometry(0.047, 0.055, 0.16, 32), glossBlack, sk.head, V3(0, 0.03, -0.005));
+  // pelvis (pants)
+  const pantsMat = fabric('#8b8b8f', 8, 8);
+  const pel = new THREE.SphereGeometry(0.2, 32, 16); pel.scale(1, 0.6, 0.68); mesh(pel, pantsMat, sk.spine, V3(0, -0.1, 0));
+  for (const k of ['L', 'R']) {
+    // hands
+    const hg = sk['hand' + k];
+    const palm = new RoundedBoxGeometry(0.085, 0.1, 0.03, 4, 0.014); mesh(palm, glossBlack, hg, V3(0, -0.05, 0));
+    const fing = new RoundedBoxGeometry(0.078, 0.075, 0.024, 4, 0.011); const f = mesh(fing, glossBlack, hg, V3(0, -0.125, 0.006)); f.rotation.x = 0.25;
+    const th = new THREE.CapsuleGeometry(0.012, 0.045, 6, 12); const tm = mesh(th, glossBlack, hg, V3(k === 'L' ? -0.04 : 0.04, -0.05, 0.016)); tm.rotation.z = k === 'L' ? -0.45 : 0.45;
+    mesh(new THREE.CylinderGeometry(0.03, 0.034, 0.05, 24), glossBlack, hg, V3(0, 0.0, 0));
+    // pants legs
+    const TH = smoothProfile([[0.112, 0.03], [0.118, -0.12], [0.11, -0.3], [0.096, -0.45]], 24);
+    mesh(oval(TH, 36, 0, Math.PI * 2, 1, (x, y, z) => 0.004 * Math.sin(25 * y + 3 * Math.atan2(x, z)) + 0.003 * Math.sin(5 * Math.atan2(x, z) + 8 * y)), fabric('#8b8b8f', 12, 10), sk['th' + k]);
+    mesh(new THREE.SphereGeometry(0.095, 24, 16), pantsMat, sk['kn' + k]);
+    const SH = smoothProfile([[0.096, 0.0], [0.094, -0.14], [0.088, -0.28], [0.082, -0.335], [0.06, -0.36]], 24);
+    mesh(oval(SH, 36, 0, Math.PI * 2, 1, (x, y, z) => 0.006 * Math.sin(42 * y + 2 * Math.sin(3 * Math.atan2(x, z))) * sstep(-0.12, -0.33, y) + 0.002 * Math.sin(7 * Math.atan2(x, z))), fabric('#8b8b8f', 12, 9), sk['kn' + k]);
+    const CUF = [[0.058, -0.355], [0.052, -0.37], [0.05, -0.395], [0.047, -0.4]].map(p => new THREE.Vector2(p[0], p[1]));
+    mesh(oval(CUF, 32, 0, Math.PI * 2, 1), fabric('#86868a', 24, 2, true), sk['kn' + k]);
+    // ankle + sneaker
+    const ft = sk['ft' + k];
+    mesh(new THREE.CylinderGeometry(0.036, 0.04, 0.07, 24), glossBlack, ft, V3(0, 0.0, 0));
+    mesh(new RoundedBoxGeometry(0.108, 0.034, 0.292, 4, 0.014), soleMat, ft, V3(0, -0.073, 0.055));
+    const upper = new THREE.SphereGeometry(0.06, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2); upper.scale(0.88, 1.05, 2.25);
+    mesh(upper, shoeMat, ft, V3(0, -0.058, 0.045));
+    const toe = new THREE.SphereGeometry(0.05, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2); toe.scale(1.0, 0.62, 1.15); mesh(toe, shoeMat, ft, V3(0, -0.058, 0.13));
+    const col = new THREE.TorusGeometry(0.045, 0.014, 12, 32); col.rotateX(Math.PI / 2); col.scale(1, 1, 1.25); mesh(col, shoeMat, ft, V3(0, -0.005, -0.012));
+    const tongue = new RoundedBoxGeometry(0.05, 0.012, 0.09, 3, 0.005); const tg = mesh(tongue, shoeMat, ft, V3(0, 0.004, 0.06)); tg.rotation.x = -0.55;
+    for (let i = 0; i < 4; i++) { const l = mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.05, 8), laceMat, ft, V3(0, -0.012 - i * 0.008, 0.055 + i * 0.019)); l.rotation.set(-0.5, 0, Math.PI / 2); }
+    const heel = new RoundedBoxGeometry(0.03, 0.04, 0.012, 3, 0.005); mesh(heel, shoeMat, ft, V3(0, -0.02, -0.08));
+  }
+}
+
+// ---------- glove hand (actor) ----------
+const glove = { root: new THREE.Group(), fingers: [] };
+function buildGlove() {
+  const g = glove.root;
+  mesh(new RoundedBoxGeometry(0.088, 0.1, 0.03, 4, 0.013), gloveMat, g, V3(0, 0.05, 0));
+  mesh(new THREE.CylinderGeometry(0.036, 0.04, 0.09, 24), gloveMat, g, V3(0, -0.035, 0));
+  const sl = mesh(new THREE.CylinderGeometry(0.05, 0.058, 0.5, 28), sleeveMat, g, V3(0, -0.32, 0));
+  mesh(new THREE.TorusGeometry(0.048, 0.008, 8, 28), sleeveMat, g, V3(0, -0.075, 0), [Math.PI / 2, 0, 0]);
+  const specs = [[-0.031, [0.046, 0.027, 0.022], 0.0098], [-0.0105, [0.05, 0.03, 0.023], 0.0101], [0.0105, [0.046, 0.028, 0.022], 0.0097], [0.031, [0.036, 0.022, 0.019], 0.0086]];
+  for (const [x, ls, r] of specs) {
+    const chain = []; let parent = g; let y0 = 0.098;
+    for (let i = 0; i < 3; i++) {
+      const j = new THREE.Group(); j.position.set(i === 0 ? x : 0, i === 0 ? y0 : ls[i - 1], 0); parent.add(j);
+      mesh(new THREE.CapsuleGeometry(r * (1 - i * 0.06), ls[i], 6, 14), gloveMat, j, V3(0, ls[i] / 2, 0));
+      chain.push(j); parent = j;
+    }
+    glove.fingers.push(chain);
+  }
+  // thumb
+  const t0 = new THREE.Group(); t0.position.set(-0.04, 0.03, -0.006); t0.rotation.set(0, 0, 0.75); g.add(t0);
+  mesh(new THREE.CapsuleGeometry(0.0115, 0.035, 6, 14), gloveMat, t0, V3(0, 0.02, 0));
+  const t1 = new THREE.Group(); t1.position.y = 0.04; t0.add(t1);
+  mesh(new THREE.CapsuleGeometry(0.0108, 0.028, 6, 14), gloveMat, t1, V3(0, 0.016, 0));
+  glove.thumb = [t0, t1];
+  scene.add(g);
+}
+function glovePose(point) { // 0 = open flat, 1 = index point
+  glove.fingers.forEach((ch, i) => {
+    const c = i === 0 ? 0.05 * point : lerp(0.08, 1.35, point);
+    ch[0].rotation.x = -c * (i === 0 ? 0.3 : 1.0) - 0.04 * i * (1 - point);
+    ch[1].rotation.x = -c * (i === 0 ? 0.2 : 1.25);
+    ch[2].rotation.x = -c * (i === 0 ? 0.1 : 0.9);
+    ch[0].rotation.z = (1 - point) * (i - 1.5) * -0.05;
+  });
+  glove.thumb[0].rotation.set(-0.5 * point, 0.3 * point, lerp(0.75, 0.35, point));
+  glove.thumb[1].rotation.x = -0.6 * point;
+}
+
+// ---------- build scene ----------
+await document.fonts.load('330px Anton');
+buildLogoMaterial();
+
+const skM = skeleton(); scene.add(skM.root); buildMannequin(skM);
+const worn = buildHoodie(skM, BURG, true);
+const skD = skeleton(); scene.add(skD.root);
+const disp = buildHoodie(skD, BURG, true);
+const skB = skeleton(); scene.add(skB.root);
+const blackH = buildHoodie(skB, '#151515', false);
+buildGlove();
+// transit clones
+const transit = {};
+for (const n of worn.order) { const c = disp.pieces[n].clone(true); c.matrixAutoUpdate = false; scene.add(c); transit[n] = c; }
+const blob = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.8), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+blob.rotation.x = -Math.PI / 2; blob.position.y = 0.002; scene.add(blob);
+// touch ripple ring (3D)
+const ripple = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+scene.add(ripple);
+
+// ---------- poses ----------
+const E = (x, y, z) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
+const APOSE = { sp: [0, 0, 0], hd: [0, 0, 0], L: { fk: [[0, 0, 0.28], [-0.12, 0, 0]] }, R: { fk: [[0, 0, -0.28], [-0.12, 0, 0]] }, lg: { L: [[0, 0, 0.03], 0, 0], R: [[0, 0, -0.03], 0, 0] }, bob: 0 };
+const DPOSE = { sp: [0, 0, 0], hd: [0, 0, 0], L: { fk: [[0.05, 0, 0.36], [-0.18, 0, 0]] }, R: { fk: [[0.05, 0, -0.36], [-0.18, 0, 0]] }, lg: APOSE.lg, bob: 0 };
+const WAKE = { sp: [0.08, 0, 0], hd: [0.32, 0, 0], L: { fk: [[0, 0, 0.18], [-0.08, 0, 0]] }, R: { fk: [[0, 0, -0.18], [-0.08, 0, 0]] }, lg: APOSE.lg, bob: -0.01 };
+const SPREAD = { sp: [-0.12, 0, 0], hd: [-0.22, 0, 0], L: { fk: [[-0.25, 0, 1.38], [-0.25, 0, 0]] }, R: { fk: [[-0.25, 0, -1.38], [-0.25, 0, 0]] }, lg: { L: [[0, 0, 0.16], 0, 0], R: [[0, 0, -0.16], 0, 0] }, bob: -0.025 };
+const POCKET = { sp: [0.04, 0, 0], hd: [0.05, -0.25, 0.06], L: { ik: [[0.07, -0.08, 0.10], [0.9, 0, -0.6]] }, R: { ik: [[-0.07, -0.08, 0.10], [-0.9, 0, -0.6]] }, lg: { L: [[-0.05, -0.2, 0.12], 0.06, 0], R: [[0.02, 0.15, -0.1], 0.04, 0] }, bob: -0.012 };
+const COLLAR = { sp: [-0.03, 0.18, 0], hd: [-0.1, 0.35, -0.06], L: { ik: [[0.07, -0.08, 0.10], [0.9, 0, -0.6]] }, R: { ik: [[-0.06, 0.52, 0.12], [-1, -0.6, 0]] }, lg: { L: [[0.0, 0, 0.13], 0.0, 0], R: [[-0.06, 0, -0.11], 0.08, 0] }, bob: -0.01 };
+const STAND = { sp: [0.02, 0, 0], hd: [0, 0, 0], L: { ik: [[0.07, -0.08, 0.10], [0.9, 0, -0.6]] }, R: { ik: [[-0.07, -0.08, 0.10], [-0.9, 0, -0.6]] }, lg: { L: [[0, 0, 0.1], 0, 0], R: [[0, 0, -0.1], 0, 0] }, bob: -0.005 };
+const SIDE = { sp: [0.03, -0.12, 0], hd: [0.02, -0.9, 0], L: POCKET.L, R: POCKET.R, lg: { L: [[-0.12, 0, 0.05], 0.12, 0.05], R: [[0.08, 0, -0.04], 0.02, 0] }, bob: -0.01 };
+const CLASP = { sp: [0.03, 0, 0], hd: [0.06, 0.08, 0.2], L: { ik: [[0.03, -0.13, 0.19], [1, -0.2, 0.4]] }, R: { ik: [[-0.025, -0.11, 0.2], [-1, -0.2, 0.4]] }, lg: { L: [[0, 0, 0.09], 0, 0], R: [[0, 0, -0.09], 0, 0] }, bob: -0.004 };
+function walkPose(t) {
+  const ph = (t - 8.0) * Math.PI * 2 * 1.0; const s = Math.sin(ph), c = Math.cos(ph);
+  return {
+    sp: [0.05, 0.08 * s, 0.03 * c], hd: [-0.02, -0.06 * s, 0],
+    L: { fk: [[0.32 * s, 0, 0.2], [-0.35 - 0.15 * Math.max(0, s), 0, 0]] }, R: { fk: [[-0.32 * s, 0, -0.2], [-0.35 - 0.15 * Math.max(0, -s), 0, 0]] },
+    lg: { L: [[-0.42 * s, 0, 0.03], 0.15 + 0.75 * Math.max(0, Math.sin(ph + 1.2)), 0.25 * s], R: [[0.42 * s, 0, -0.03], 0.15 + 0.75 * Math.max(0, Math.sin(ph + Math.PI + 1.2)), -0.25 * s] },
+    bob: -0.02 - 0.02 * Math.abs(c),
+  };
+}
+const _v = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+function armQuats(sk, side, spec) {
+  if (spec.fk) return [E(...spec.fk[0]), E(...spec.fk[1])];
+  const sh = sk['sh' + side], el = sk['el' + side];
+  sk.root.updateMatrixWorld(true);
+  const S = sh.getWorldPosition(new THREE.Vector3());
+  const T = sk.spine.localToWorld(V3(...spec.ik[0]));
+  const Pp = sk.spine.localToWorld(V3(...spec.ik[0]).add(V3(...spec.ik[1])));
+  let d = S.distanceTo(T); d = clamp(d, Math.abs(L1 - L2) + 1e-3, (L1 + L2) * 0.999);
+  const dir = T.clone().sub(S).normalize();
+  const a = (L1 * L1 + d * d - L2 * L2) / (2 * d); const h = Math.sqrt(Math.max(L1 * L1 - a * a, 0));
+  const pole = Pp.clone().sub(S); pole.sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize();
+  const Ep = S.clone().add(dir.clone().multiplyScalar(a)).add(pole.multiplyScalar(h));
+  const Tp = S.clone().add(dir.clone().multiplyScalar(d));
+  const pq = sh.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const u = Ep.clone().sub(S).normalize().applyQuaternion(pq);
+  const qs = new THREE.Quaternion().setFromUnitVectors(V3(0, -1, 0), u);
+  const shW = sh.parent.getWorldQuaternion(new THREE.Quaternion()).multiply(qs).invert();
+  const f = Tp.clone().sub(Ep).normalize().applyQuaternion(shW);
+  const qe = new THREE.Quaternion().setFromUnitVectors(V3(0, -1, 0), f);
+  return [qs, qe];
+}
+function applyPose(sk, pa, pb, u) {
+  sk.spine.quaternion.copy(E(...pa.sp)).slerp(E(...pb.sp), u);
+  sk.head.quaternion.copy(E(...pa.hd)).slerp(E(...pb.hd), u);
+  sk.hips.position.y = 0.98 + lerp(pa.bob, pb.bob, u);
+  for (const k of ['L', 'R']) {
+    const la = pa.lg[k], lb = pb.lg[k];
+    sk['th' + k].quaternion.copy(E(...la[0])).slerp(E(...lb[0]), u);
+    sk['kn' + k].rotation.set(lerp(la[1], lb[1], u), 0, 0);
+    sk['ft' + k].rotation.set(lerp(la[2], lb[2], u), 0, 0);
+  }
+  for (const k of ['L', 'R']) {
+    const qa = armQuats(sk, k, pa[k]), qb = armQuats(sk, k, pb[k]);
+    sk['sh' + k].quaternion.copy(qa[0]).slerp(qb[0], u);
+    sk['el' + k].quaternion.copy(qa[1]).slerp(qb[1], u);
+  }
+}
+// mannequin pose track: [time, pose(fn or obj), easing]
+const TRACK = [
+  [0, APOSE], [3.0, APOSE], [3.18, WAKE], [3.5, SPREAD], [3.95, SPREAD], [4.12, POCKET], [6.0, POCKET], [6.08, COLLAR], [6.72, COLLAR], [6.78, STAND],
+  [7.5, STAND], [7.72, SIDE], [7.98, SIDE], [8.12, walkPose], [8.98, walkPose], [9.0, CLASP], [10.01, CLASP],
+];
+function poseAt(t) {
+  let i = 0; while (i < TRACK.length - 2 && TRACK[i + 1][0] <= t) i++;
+  const [ta, A] = TRACK[i], [tb, B] = TRACK[i + 1];
+  const pa = typeof A === 'function' ? A(t) : A, pb = typeof B === 'function' ? B(t) : B;
+  let u = (t - ta) / (tb - ta); u = eIO3(u);
+  return [pa, pb, u];
+}
+
+// ---------- word fitting ----------
+const words = {};
+for (const id of ['wROOH', 'wOVER', 'wSTREET', 'wICONIC', 'wOUT', 'wHERO']) words[id] = document.getElementById(id);
+function fit(el, width) { el.style.fontSize = '100px'; const w = el.getBoundingClientRect().width; el.style.fontSize = (100 * width / w) + 'px'; el._w = el.getBoundingClientRect().width; el._h = el.getBoundingClientRect().height; }
+fit(words.wROOH, 1840); fit(words.wOVER, 1820); fit(words.wSTREET, 900); fit(words.wICONIC, 1860); fit(words.wOUT, 2600); fit(words.wHERO, 1880);
+words.wOUT.style.color = 'transparent'; words.wOUT.style.webkitTextStroke = '6px ' + BURG;
+function word(id, s) {
+  const el = words[id];
+  if (!s || s.o <= 0) { el.style.opacity = 0; return; }
+  el.style.opacity = s.o;
+  const x = (s.x ?? 0.5) * W - el._w / 2, y = (s.y ?? 0.5) * H - el._h / 2;
+  el.style.transform = `translate(${x}px,${y}px) scale(${s.s ?? 1}) skewX(${s.k ?? 0}deg)`;
+  el.style.clipPath = s.clip ? `inset(${s.clip})` : 'none';
+}
+const $ = id => document.getElementById(id);
+
+// ---------- cameras ----------
+const cams = [0, 1, 2].map(() => new THREE.PerspectiveCamera(35, W / H, 0.01, 60));
+function setCam(cam, pos, tgt, fov, roll = 0, yawOff = 0) {
+  cam.position.copy(pos); cam.up.set(0, 1, 0); cam.lookAt(tgt); if (yawOff) cam.rotateY(yawOff); if (roll) cam.rotateZ(roll);
+  cam.fov = fov; cam.updateProjectionMatrix();
+}
+const orbit = (c, r, a, y) => V3(c.x + r * Math.sin(a), y, c.z + r * Math.cos(a));
+function anchorFrame(a) {
+  const p = a.getWorldPosition(new THREE.Vector3());
+  const q = a.getWorldQuaternion(new THREE.Quaternion());
+  return { p, n: V3(0, 0, 1).applyQuaternion(q), x: V3(1, 0, 0).applyQuaternion(q), y: V3(0, 1, 0).applyQuaternion(q) };
+}
+function whip(t, a, b, amt = 0.55, dur = 0.07) {
+  let o = 0;
+  if (t > b - dur) o += amt * ((t - (b - dur)) / dur) ** 2;
+  if (t < a + dur) o -= amt * (((a + dur) - t) / dur) ** 2;
+  return o;
+}
+function shake(t, t0, amp, dur = 0.25) { if (t < t0 || t > t0 + dur) return V3(0, 0, 0); const k = amp * (1 - (t - t0) / dur) ** 2; return V3(Math.sin(t * 91) * k, Math.sin(t * 73 + 1) * k, 0); }
+
+// ---------- main frame function ----------
+const M = V3(0, 0, MZ);
+const S2pos = V3(0.42, 1.37, 1.3), S2tgt = V3(0.07, 1.27, 0.08);
+const S4pos = V3(0.62, 0.3, MZ + 3.3), S4tgt = V3(0, 1.08, MZ);
+
+window.renderAt = function (t) {
+  // ---- object visibility
+  const showBlack = t < 1.0, showDisp = t >= 1.0 && t < 2.15, showTransit = t >= 2.15 && t < 2.96, showMan = t >= 2.15;
+  skB.root.visible = showBlack; skD.root.visible = showDisp; skM.root.visible = showMan;
+  for (const n in worn.pieces) worn.pieces[n].visible = t >= 2.96;
+  for (const n in transit) transit[n].visible = showTransit;
+
+  // ---- black hoodie
+  const bob = 0.018 * Math.sin(t * 2.4);
+  applyPose(skB, DPOSE, DPOSE, 0);
+  {
+    let x = 0, rz = 0, ry = 0.12 * Math.sin(t * 1.6), y = 0.0 + bob;
+    if (t > 0.6) { const k = t - 0.6; x = -k * 3.2 - 14 * k * k; rz = 2.2 * k; ry += -3 * k; y += 0.6 * k * k; }
+    skB.root.position.set(x, y, 0); skB.root.rotation.set(0, ry, rz);
+  }
+  // ---- display hoodie (spring in)
+  applyPose(skD, DPOSE, DPOSE, 0);
+  {
+    const k = Math.max(0, t - 1.0);
+    const x = 3.4 * Math.exp(-7.2 * k) * Math.cos(10.5 * k);
+    const rz = 0.32 * Math.exp(-6 * k) * Math.sin(10.5 * k);
+    const ry = -0.5 * Math.exp(-5 * k) * Math.cos(9 * k) + 0.1 * Math.sin(t * 1.6);
+    const sq = 1 + 0.05 * Math.exp(-6 * k) * Math.sin(14 * k);
+    let push = 0; if (t > 2.1) push = -0.02 * Math.sin(Math.min(1, (t - 2.1) / 0.06) * Math.PI);
+    skD.root.position.set(x, bob, push); skD.root.rotation.set(0, ry, rz); skD.root.scale.set(1 / sq, sq, 1);
+  }
+  // ---- mannequin
+  {
+    const [pa, pb, u] = poseAt(t);
+    let ry = 0, z = MZ;
+    if (t >= 7.5 && t < 8.0) ry = eIO3(seg(t, 7.5, 7.85)) * Math.PI / 2 * 0.92;
+    if (t >= 8.0 && t < 9.0) { ry = (1 - eIO3(seg(t, 8.0, 8.32))) * Math.PI / 2 * 0.92; z = MZ + 1.35 * eI2(seg(t, 8.0, 8.2)) * 0.2 + 1.35 * Math.max(0, t - 8.1) ; }
+    if (t >= 3.0 && t < 3.08) { const s = 1 + 0.04 * Math.sin(seg(t, 3.0, 3.08) * Math.PI); skM.root.scale.set(s, s, s); } else skM.root.scale.set(1, 1, 1);
+    skM.root.position.set(0, 0, z); skM.root.rotation.set(0, ry, 0);
+    applyPose(skM, pa, pb, u);
+    blob.position.set(0, 0.002, z + 0.03); blob.visible = showMan;
+  }
+  scene.updateMatrixWorld(true);
+
+  // ---- transit pieces
+  if (showTransit) {
+    const U = seg(t, 2.15, 2.95);
+    const pA = new THREE.Vector3(), qA = new THREE.Quaternion(), sA = new THREE.Vector3();
+    const pB = new THREE.Vector3(), qB = new THREE.Quaternion(), sB = new THREE.Vector3();
+    worn.order.forEach((n, i) => {
+      disp.pieces[n].matrixWorld.decompose(pA, qA, sA);
+      worn.pieces[n].matrixWorld.decompose(pB, qB, sB);
+      const d = i * 0.035; const u = clamp((U - d) / (1 - 0.035 * 6));
+      const e = eIO3(u);
+      const p = pA.clone().lerp(pB, e);
+      const ex = Math.pow(Math.sin(Math.PI * clamp(u * 1.05)), 1.3);
+      const dirs = { hood: V3(0, 0.55, -0.2), upL: V3(0.7, 0.25, 0.1), upR: V3(-0.7, 0.25, 0.1), back: V3(0.1, 0.1, -0.6), front: V3(-0.1, -0.05, 0.65), loL: V3(0.8, -0.3, 0.2), loR: V3(-0.8, -0.3, 0.2) };
+      p.add(dirs[n].clone().multiplyScalar(ex * 0.55)); p.y += Math.sin(Math.PI * u) * 0.25;
+      const q = qA.clone().slerp(qB, e);
+      const spinAx = V3(hash(i) - .5, hash(i + 9) - .5, hash(i + 3) - .5).normalize();
+      q.multiply(new THREE.Quaternion().setFromAxisAngle(spinAx, ex * 1.1));
+      const s = sA.clone().lerp(sB, e);
+      transit[n].matrix.compose(p, q, s);
+    });
+    scene.updateMatrixWorld(true);
+  }
+
+  // ---- glove
+  {
+    let vis = false; let pos = V3(0, 0, 0); let q = new THREE.Quaternion(); let point = 0;
+    if (t >= 0.25 && t < 0.95) {
+      vis = true; const u = seg(t, 0.3, 0.88); const e = eIO3(u);
+      pos.set(lerp(1.15, -1.25, e), 1.02 + 0.06 * Math.sin(Math.PI * e), 0.42);
+      q.setFromEuler(new THREE.Euler(0.12, 0.15, 0.55 - 0.35 * e)); point = 0;
+    } else if (t >= 1.95 && t < 2.42) {
+      vis = true; point = 1;
+      const tip = V3(-0.031, 0.098 + 0.046 + 0.027 + 0.022 + 0.008, 0);
+      const target = disp.anchors.logo.getWorldPosition(new THREE.Vector3()).add(V3(-0.035, 0.05, 0.0));
+      q.setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.22, 1.42, 0, 'YXZ'));
+      const tipW = tip.clone().applyQuaternion(q);
+      const base = target.clone().sub(tipW);
+      const appr = 1 - eO3(seg(t, 1.95, 2.1)); const leave = eI2(seg(t, 2.16, 2.42));
+      const back = V3(0.95, -0.12, 0.2).normalize();
+      pos.copy(base).add(back.multiplyScalar(appr * 0.6 + leave * 0.9));
+    }
+    glove.root.visible = vis; glovePose(point);
+    glove.root.position.copy(pos); glove.root.quaternion.copy(q);
+  }
+  // ---- 3D ripple
+  if (t >= 2.1 && t < 2.45) {
+    const fr = anchorFrame(disp.anchors.logo); const u = seg(t, 2.1, 2.45);
+    ripple.visible = true; ripple.position.copy(fr.p).add(V3(-0.035, 0.05, 0.004).applyQuaternion(new THREE.Quaternion()));
+    ripple.quaternion.copy(disp.anchors.logo.getWorldQuaternion(new THREE.Quaternion()));
+    const s = 0.01 + eO3(u) * 0.16; ripple.scale.set(s, s, s); ripple.material.opacity = (1 - u) * 0.9;
+  } else ripple.visible = false;
+  scene.updateMatrixWorld(true);
+
+  // ---- camera plan
+  let panels = [];
+  const P = (cam, rect) => panels.push({ cam, rect });
+  const c0 = cams[0];
+  if (t < 2.0) {
+    const punch = t > 1.0 ? 0.08 * Math.exp(-(t - 1.0) * 6) : 0;
+    setCam(c0, V3(0.05 * Math.sin(t * 0.8), 1.2, 2.75 - 0.12 * t), V3(0, 1.13, 0), 31 * (1 - punch), 0, whip(t, -1, 2.0, 0.25, 0.05));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 2.15) {
+    const u = seg(t, 2.0, 2.15);
+    setCam(c0, S2pos.clone().add(V3(-0.04 * u, 0, -0.06 * u)), S2tgt, 30, -0.03, whip(t, 2.0, 99, 0.25, 0.05));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 3.0) {
+    const u = seg(t, 2.15, 3.0); const e = eIO3(u);
+    const pos = S2pos.clone().lerp(S4pos, e).add(V3(1.2, 0.9, 0.3).multiplyScalar(Math.sin(Math.PI * e)));
+    const tgt = S2tgt.clone().lerp(S4tgt, eIO3(Math.pow(u, 0.75)));
+    setCam(c0, pos, tgt, lerp(30, 40, e), Math.sin(Math.PI * u) * 0.12);
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 3.5) {
+    const u = seg(t, 3.0, 3.5);
+    const pos = orbit(M, 3.3 - 0.45 * eO3(u), 0.19 - 0.08 * u, 0.3).add(shake(t, 3.0, 0.03));
+    setCam(c0, pos, S4tgt, 40, 0.05, whip(t, 3.0, 3.5, 0.3, 0.05));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 4.0) {
+    const u = seg(t, 3.5, 4.0); const e = eIO5(u);
+    const a = lerp(0.1, -2.5, e);
+    setCam(c0, orbit(M, 2.75, a, 0.32 + 0.35 * Math.sin(Math.PI * u)).add(shake(t, 3.5, 0.02, 0.15)), V3(0, 1.12, MZ), 40, -0.06 * Math.sin(Math.PI * u));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 4.5) {
+    const u = seg(t, 4.0, 4.5);
+    setCam(c0, orbit(M, 2.95 - 0.25 * eO3(u), -0.42 + 0.06 * u, 0.26), V3(0, 1.18, MZ), 37, 0.04, whip(t, 4.0, 4.5, 0.6));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 5.0) { // macro: cotton + stitching at pocket edge
+    const u = seg(t, 4.5, 5.0); const r = eO5(u);
+    const f = anchorFrame(worn.anchors.pocket);
+    const pos = f.p.clone().add(f.n.clone().multiplyScalar(0.085 - 0.02 * r)).add(f.x.clone().multiplyScalar(0.11 - 0.13 * r)).add(f.y.clone().multiplyScalar(0.025));
+    const tgt = f.p.clone().add(f.x.clone().multiplyScalar(0.045 - 0.08 * r)).add(f.y.clone().multiplyScalar(-0.005));
+    setCam(c0, pos, tgt, 30, 0.18 - 0.1 * r, whip(t, 4.5, 5.0));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 5.5) { // macro: ROOH embroidery
+    const u = seg(t, 5.0, 5.5); const r = eO5(u);
+    const f = anchorFrame(worn.anchors.logo);
+    const pos = f.p.clone().add(f.n.clone().multiplyScalar(0.13 - 0.045 * r)).add(f.x.clone().multiplyScalar(0.05 * (1 - r))).add(f.y.clone().multiplyScalar(-0.03 * (1 - r)));
+    setCam(c0, pos, f.p.clone().add(f.y.clone().multiplyScalar(-0.002)), 26, lerp(-0.3, -0.05, r), whip(t, 5.0, 5.5));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 6.0) { // macro: hood, drawstring
+    const u = seg(t, 5.5, 6.0); const r = eO5(u);
+    const f = anchorFrame(worn.anchors.string);
+    const pos = f.p.clone().add(f.n.clone().multiplyScalar(0.2 - 0.04 * r)).add(f.x.clone().multiplyScalar(-0.12 + 0.05 * r)).add(V3(0, 0.02 + 0.03 * r, 0));
+    const tgt = f.p.clone().add(V3(0.01, -0.03 + 0.04 * r, -0.02));
+    setCam(c0, pos, tgt, 32, 0.1 - 0.15 * r, whip(t, 5.5, 6.0, 0.5));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 6.75) { // two panel
+    const u = seg(t, 6.0, 6.75); const sp = lerp(1, 0.5, eO5(seg(t, 6.0, 6.14)));
+    setCam(cams[0], orbit(M, 3.5 - 0.3 * u, 0.55 - 0.12 * u, 0.22), V3(0, 1.02, MZ), 42);
+    P(cams[0], [0, 0, sp, 1]);
+    const f = anchorFrame(worn.anchors.logo);
+    setCam(cams[1], f.p.clone().add(f.n.clone().multiplyScalar(0.34 - 0.06 * u)).add(f.x.clone().multiplyScalar(0.06)).add(V3(0, 0.04 - 0.04 * u, 0)), f.p.clone().add(V3(-0.04, -0.03, 0)), 34, 0);
+    P(cams[1], [sp, 0, 1 - sp, 1]);
+  } else if (t < 7.5) { // three panel
+    const u = seg(t, 6.75, 7.5);
+    [0, Math.PI / 2, Math.PI].forEach((a, i) => {
+      const k = eO5(seg(t, 6.75 + i * 0.05, 6.9 + i * 0.05));
+      setCam(cams[i], orbit(M, 4.3, a + 0.12 * u - 0.06, 1.0), V3(0, 0.96, MZ), 29.5);
+      P(cams[i], [i / 3, (1 - k) * 1.0, 1 / 3, 1]);
+    });
+  } else if (t < 8.0) {
+    const u = seg(t, 7.5, 8.0);
+    setCam(c0, orbit(M, 3.4 - 0.2 * u, 0.12, 0.5), V3(0, 1.05, MZ), 36, 0.0, whip(t, 7.5, 99, 0.4));
+    P(c0, [0, 0, 1, 1]);
+  } else if (t < 9.0) {
+    const u = seg(t, 8.0, 9.0); const z = skM.root.position.z;
+    setCam(c0, V3(0.38 - 0.1 * u, 0.24, MZ + 3.7 + 0.55 * u), V3(0, 1.1, z), 38 - 3 * u, 0.03, whip(t, -1, 9.0, 0.35, 0.05));
+    P(c0, [0, 0, 1, 1]);
+  } else {
+    const e = eO3(seg(t, 9.0, 9.5));
+    setCam(c0, V3(0, 0.98, MZ + 4.75 - 0.75 * e), V3(0, 0.97, MZ), 32, 0);
+    P(c0, [0, 0, 1, 1]);
+  }
+
+  // ---- render panels
+  renderer.setScissorTest(false); renderer.clear();
+  renderer.setScissorTest(true);
+  for (const { cam, rect } of panels) {
+    const [x, y, w, h] = rect; const px = Math.round(x * W), pw = Math.round(w * W), ph = Math.round(h * H), py = Math.round((1 - y - h) * H);
+    if (pw < 2 || ph < 2) continue;
+    // keep full height framing: if panel slides (y offset), render at full height then scissor
+    const fullH = H; const vy = Math.round(-y * H);
+    cam.aspect = pw / fullH; cam.updateProjectionMatrix();
+    renderer.setViewport(px, vy, pw, fullH); renderer.setScissor(px, Math.max(0, vy), pw, Math.min(fullH, fullH + vy));
+    renderer.render(scene, cam);
+  }
+  renderer.setScissorTest(false);
+
+  // ---- typography & fx
+  const o = (a, b, fi = 0.04, fo = 0.04) => (t < a || t >= b) ? 0 : Math.min(1, (t - a) / fi + (fi === 0 ? 1 : 0), (b - t) / fo + (fo === 0 ? 1 : 0));
+  // ROOH slam 3.0-4.0
+  if (t >= 3.0 && t < 4.0) { const s = lerp(1.35, 1, eOBack(seg(t, 3.0, 3.2))); word('wROOH', { o: 1, s, y: 0.44, k: 0 }); } else word('wROOH', null);
+  if (t >= 4.0 && t < 4.5) { const e = eO5(seg(t, 4.0, 4.16)); word('wOVER', { o: 1, x: lerp(-0.6, 0.5, e) + 0.02 * seg(t, 4.16, 4.5), y: 0.42, k: lerp(-14, 0, e) }); } else word('wOVER', null);
+  if (t >= 6.0 && t < 6.75) { const sp = lerp(1, 0.5, eO5(seg(t, 6.0, 6.14))); const e = eO5(seg(t, 6.03, 6.2)); word('wSTREET', { o: 1, x: sp / 2, y: lerp(0.62, 0.40, e), clip: `0 ${((1 - sp) * W).toFixed(0)}px 0 0` }); } else word('wSTREET', null);
+  if (t >= 6.75 && t < 7.5) { const e = eO5(seg(t, 6.82, 7.0)); word('wICONIC', { o: 1, y: 0.4, s: lerp(1.15, 1, e) + 0.015 * seg(t, 7.0, 7.5) }); } else word('wICONIC', null);
+  if (t >= 7.5 && t < 9.0) { word('wOUT', { o: 1, x: 0.5 + 0.35 - 0.6 * seg(t, 7.5, 9.0), y: 0.4 }); } else word('wOUT', null);
+  if (t >= 9.0) { const e = eO3(seg(t, 9.0, 9.5)); word('wHERO', { o: 1, y: 0.39, s: lerp(0.93, 1.0, e) }); } else word('wHERO', null);
+  // split panel bg + dividers
+  const pb = $('pbg1');
+  if (t >= 6.0 && t < 6.75) { const sp = lerp(1, 0.5, eO5(seg(t, 6.0, 6.14))); pb.style.display = 'block'; pb.style.left = sp * W + 'px'; pb.style.width = (1 - sp) * W + 'px'; pb.style.top = '0px';
+    $('d1').style.display = 'block'; $('d1').style.left = (sp * W - 3) + 'px'; $('d2').style.display = 'none';
+  } else if (t >= 6.75 && t < 7.5) {
+    const k = eO5(seg(t, 6.8, 6.95)); pb.style.display = 'block'; pb.style.left = (W / 3) + 'px'; pb.style.width = (W / 3) + 'px'; pb.style.top = ((1 - k) * H) + 'px';
+    $('d1').style.display = 'block'; $('d1').style.left = (W / 3 - 3) + 'px'; $('d2').style.display = 'block'; $('d2').style.left = (2 * W / 3 - 3) + 'px';
+  } else { pb.style.display = 'none'; $('d1').style.display = 'none'; $('d2').style.display = 'none'; }
+  ['l1', 'l2', 'l3'].forEach((id, i) => { const el = $(id); if (t >= 6.9 + i * 0.05 && t < 7.5) { el.style.display = 'block'; el.style.left = (i * W / 3 + 40) + 'px'; } else el.style.display = 'none'; });
+  // wipes
+  const wp = $('wipe'); let wipeU = -1;
+  for (const [a, b] of [[5.93, 6.07], [6.68, 6.82], [8.93, 9.07]]) if (t >= a && t < b) wipeU = (t - a) / (b - a);
+  if (wipeU >= 0) { wp.style.display = 'block'; wp.style.left = lerp(-90, 130, wipeU) + '%'; } else wp.style.display = 'none';
+  // flash
+  $('flash').style.opacity = t >= 2.95 && t < 3.12 ? 0.85 * (1 - seg(t, 2.95, 3.12)) : (t >= 3.5 && t < 3.56 ? 0.35 * (1 - seg(t, 3.5, 3.56)) : 0);
+  // touch rings (screen space)
+  for (const [id, d] of [['ring1', 0], ['ring2', 0.07]]) {
+    const el = $(id);
+    if (t >= 2.1 + d && t < 2.42) {
+      const p = disp.anchors.logo.getWorldPosition(new THREE.Vector3()).add(V3(-0.035, 0.05, 0)).project(cams[0]);
+      const u = seg(t, 2.1 + d, 2.42); const r = 20 + eO3(u) * 230;
+      el.style.display = 'block'; el.style.width = el.style.height = (2 * r) + 'px';
+      el.style.left = ((p.x * .5 + .5) * W - r - 5) + 'px'; el.style.top = ((-p.y * .5 + .5) * H - r - 5) + 'px'; el.style.opacity = (1 - u);
+    } else el.style.display = 'none';
+  }
+  return true;
+};
+window.ready = true;
+</script>
+</body></html>
