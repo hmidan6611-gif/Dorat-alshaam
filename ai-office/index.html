@@ -625,7 +625,7 @@ function setTab(name) {
   ['office', 'hive', 'output'].forEach(t => $('tab-' + t).setAttribute('aria-selected', String(t === name)));
   const out = name === 'output';
   teamEl.hidden = out; logEl.hidden = !out; $('team-title').textContent = out ? 'آخر المخرجات' : 'فريقك';
-  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, isPhone() ? 1.25 : 1.5); stormEvent(-1, '#c9a6ff', 0.6); }
+  if (name === 'hive') { onSelect(-1); focusOn(CORE_POS, isPhone() ? 1.25 : 1.5); }
   if (name === 'office') { onSelect(-1); }
 }
 $('tab-office').onclick = () => setTab('office');
